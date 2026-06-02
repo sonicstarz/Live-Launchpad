@@ -109,8 +109,9 @@ h1{font-weight:900;font-size:clamp(32px,6vw,56px);line-height:1;letter-spacing:-
 .tag.tbd{background:rgba(255,182,39,.15);color:var(--amber)}
 .tag.hold{background:rgba(255,93,93,.15);color:var(--red)}
 .tag.success{background:rgba(77,159,255,.15);color:var(--blue)}
-.dl-watch{font-family:var(--mono);font-size:11px;color:var(--blue);text-decoration:none}
-.dl-watch:hover{color:var(--amber)}
+.dl-desc{font-size:12px;color:var(--txt2);line-height:1.5;margin-bottom:8px}
+.dl-link{font-family:var(--mono);font-size:11px;color:var(--blue);text-decoration:none}
+.dl-link:hover{color:var(--amber)}
 footer{border-top:1px solid var(--line);margin-top:50px;padding:28px 0 50px;font-size:12px;color:var(--txt3)}
 footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber)}
 ::-webkit-scrollbar{height:8px;width:8px}::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
@@ -153,10 +154,10 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
 
 <script>
 const FALLBACK=[
-  {name:"Falcon 9 Block 5 | Starlink Group 17-44",status:"Go",net:"2026-06-10T14:00:00Z",image:"https://thespacedevs-prod.nyc3.digitaloceanspaces.com/media/images/falcon2520925_image_20221009234147.png",vidURLs:[]},
-  {name:"Spectrum | Onward and Upward",status:"TBD",net:"2026-06-18T00:00:00Z",image:null,vidURLs:[]},
-  {name:"Long March 10B | Demo Flight",status:"TBD",net:"2026-06-24T00:00:00Z",image:null,vidURLs:[]},
-  {name:"Falcon 9 Block 5 | SDA Tranche 1",status:"TBD",net:"2026-06-24T09:30:00Z",image:null,vidURLs:[]}
+  {name:"Falcon 9 Block 5 | Starlink Group 17-44",status:"Go",net:"2026-06-10T14:00:00Z",provider:"SpaceX",pad:"SLC-4E",location:"Vandenberg SFB, CA, USA",orbit:"LEO",desc:"A batch of Starlink satellites for SpaceX's space-based internet constellation.",image:"https://thespacedevs-prod.nyc3.digitaloceanspaces.com/media/images/falcon2520925_image_20221009234147.png",vidURLs:[],infoURL:"https://www.spacex.com/launches/",mapURL:null},
+  {name:"Spectrum | Onward and Upward",status:"TBD",net:"2026-06-18T00:00:00Z",provider:"Isar Aerospace",pad:"Andoya Spaceport",location:"Norway",orbit:"SSO",desc:"Test flight of Isar Aerospace's Spectrum small-lift launch vehicle.",image:null,vidURLs:[],infoURL:null,mapURL:null},
+  {name:"Long March 10B | Demo Flight",status:"TBD",net:"2026-06-24T00:00:00Z",provider:"CASC",pad:"Wenchang, China",location:"China",orbit:"N/A",desc:"Demonstration flight of the Long March 10B.",image:null,vidURLs:[],infoURL:null,mapURL:null},
+  {name:"Falcon 9 Block 5 | SDA Tranche 1",status:"TBD",net:"2026-06-24T09:30:00Z",provider:"SpaceX",pad:"SLC-4E",location:"Vandenberg SFB, CA, USA",orbit:"PO",desc:"A batch of satellites for the Space Development Agency's Tranche 1 Tracking Layer.",image:null,vidURLs:[],infoURL:"https://www.spacex.com/launches/",mapURL:null}
 ];
 let ALL=[], byDay={}, view=new Date();
 const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -208,10 +209,16 @@ function openDay(k){
   document.getElementById('dayList').innerHTML=ls.map(function(l){
     var sc=statusClass(l.status);
     var img=l.image?'<img src="'+esc(l.image)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'<div style="width:54px;height:54px;border-radius:9px;background:var(--panel2);display:grid;place-items:center;font-size:22px;flex-shrink:0">🚀</div>';
-    var watch=(l.vidURLs&&l.vidURLs.length&&l.vidURLs[0].url)?'<a class="dl-watch" href="'+esc(l.vidURLs[0].url)+'" target="_blank" rel="noopener">▶ Watch</a>':'';
+    var meta=[l.provider,l.pad,l.location,(l.orbit&&l.orbit!=='N/A'?l.orbit:'')].filter(Boolean).join(' · ');
+    var desc=l.desc?'<div class="dl-desc">'+esc(l.desc.length>240?l.desc.slice(0,240)+'…':l.desc)+'</div>':'';
+    var links='';
+    if(l.vidURLs&&l.vidURLs.length&&l.vidURLs[0].url) links+='<a class="dl-link" href="'+esc(l.vidURLs[0].url)+'" target="_blank" rel="noopener">▶ Watch</a>';
+    if(l.infoURL) links+='<a class="dl-link" href="'+esc(l.infoURL)+'" target="_blank" rel="noopener">↗ Official page</a>';
+    if(l.mapURL) links+='<a class="dl-link" href="'+esc(l.mapURL)+'" target="_blank" rel="noopener">📍 Pad map</a>';
     return '<div class="dl">'+img+'<div class="dl-body"><div class="dl-name">'+esc(l.name||'Launch')+'</div>'
-      +'<div class="dl-meta">'+timeStr(l.net)+' local</div>'
-      +'<div class="dl-tags"><span class="tag '+sc+'">'+esc(l.status||'TBD')+'</span>'+watch+'</div></div></div>';
+      +'<div class="dl-meta">'+esc(timeStr(l.net)+' local'+(meta?' · '+meta:''))+'</div>'
+      +desc
+      +'<div class="dl-tags"><span class="tag '+sc+'">'+esc(l.status||'TBD')+'</span>'+links+'</div></div></div>';
   }).join('');
   document.getElementById('dayModal').classList.add('open');
 }

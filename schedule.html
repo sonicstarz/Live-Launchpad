@@ -78,6 +78,8 @@ h1{font-weight:900;font-size:clamp(32px,6vw,56px);line-height:1;letter-spacing:-
 .tag.hold{background:rgba(255,93,93,.15);color:var(--red)}
 .tag.success{background:rgba(77,159,255,.15);color:var(--blue)}
 .tag.prov{background:var(--panel2);color:var(--txt2)}
+.ll-link{font-family:var(--mono);font-size:11px;color:var(--blue);text-decoration:none;margin-left:2px}
+.ll-link:hover{color:var(--amber)}
 .launch-when{font-family:var(--mono);font-size:12px;color:var(--amber);white-space:nowrap;flex-shrink:0;text-align:right}
 .launch-when small{display:block;color:var(--txt3);font-size:10px;margin-top:2px}
 .loading{text-align:center;padding:40px;color:var(--txt3);font-family:var(--mono);font-size:13px}
@@ -145,7 +147,7 @@ function renderList(){
   list.innerHTML=items.map(function(l){
     const sc=statusClass(l.status);
     const img=l.image?'<img class="launch-img" src="'+l.image+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'<div class="launch-img" style="display:grid;place-items:center;font-size:24px">\uD83D\uDE80</div>';
-    return '<div class="launch">'+img+'<div class="launch-body"><div class="launch-name">'+(l.name||l.mission||'Unknown mission')+'</div><div class="launch-meta">'+[l.provider,l.pad,l.location].filter(Boolean).join(' \u00B7 ')+(l.orbit&&l.orbit!=='N/A'?' \u00B7 '+l.orbit:'')+'</div><div class="launch-tags"><span class="tag '+sc+'">'+(l.status||'TBD')+'</span>'+(l.missionType?'<span class="tag prov">'+l.missionType+'</span>':'')+'</div></div><div class="launch-when">'+relTime(l.net)+'<small>'+localDate(l.net)+'</small></div></div>';
+    return '<div class="launch">'+img+'<div class="launch-body"><div class="launch-name">'+(l.name||l.mission||'Unknown mission')+'</div><div class="launch-meta">'+[l.provider,l.pad,l.location].filter(Boolean).join(' \u00B7 ')+(l.orbit&&l.orbit!=='N/A'?' \u00B7 '+l.orbit:'')+'</div><div class="launch-tags"><span class="tag '+sc+'">'+(l.status||'TBD')+'</span>'+(l.missionType?'<span class="tag prov">'+l.missionType+'</span>':'')+((l.vidURLs&&l.vidURLs.length&&l.vidURLs[0].url)?'<a class="ll-link" href="'+l.vidURLs[0].url+'" target="_blank" rel="noopener">▶ Watch</a>':'')+(l.infoURL?'<a class="ll-link" href="'+l.infoURL+'" target="_blank" rel="noopener">↗ Details</a>':'')+'</div></div><div class="launch-when">'+relTime(l.net)+'<small>'+localDate(l.net)+'</small></div></div>';
   }).join('');
 }
 function setNextHero(){

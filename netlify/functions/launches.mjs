@@ -6,8 +6,8 @@ export default async (req) => {
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '12', 10), 40);
 
   const endpoint = kind === 'previous'
-    ? `https://ll.thespacedevs.com/2.0.0/launch/previous/?limit=${limit}&mode=list`
-    : `https://ll.thespacedevs.com/2.0.0/launch/upcoming/?limit=${limit}&mode=list`;
+    ? `https://ll.thespacedevs.com/2.0.0/launch/previous/?limit=${limit}&mode=detailed`
+    : `https://ll.thespacedevs.com/2.0.0/launch/upcoming/?limit=${limit}&mode=detailed`;
 
   try {
     const r = await fetch(endpoint, { headers: { 'User-Agent': 'space-age-dashboard' } });
@@ -29,8 +29,12 @@ export default async (req) => {
       pad: L.pad && L.pad.name,
       location: L.pad && L.pad.location && L.pad.location.name,
       image: L.image,
+      infographic: L.infographic,
       webcastLive: L.webcast_live,
-      vidURLs: L.vidURLs || []
+      vidURLs: L.vidURLs || [],
+      infoURL: (L.infoURLs && L.infoURLs[0] && L.infoURLs[0].url) || null,
+      mapURL: (L.pad && L.pad.map_url) || null,
+      program: (L.program && L.program[0] && L.program[0].name) || null
     }));
 
     return new Response(JSON.stringify({ count: data.count, results: slim }), {
