@@ -3,7 +3,7 @@
 export default async (req) => {
   const url = new URL(req.url);
   const kind = url.searchParams.get('kind') || 'upcoming'; // 'upcoming' | 'previous'
-  const limit = Math.min(parseInt(url.searchParams.get('limit') || '12', 10), 20);
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '12', 10), 40);
 
   const endpoint = kind === 'previous'
     ? `https://ll.thespacedevs.com/2.0.0/launch/previous/?limit=${limit}&mode=list`

@@ -45,6 +45,10 @@ h1{font-weight:900;font-size:clamp(32px,6vw,56px);line-height:1;letter-spacing:-
 .gt{background:linear-gradient(100deg,var(--amber),var(--coral) 45%,var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .sub{color:var(--txt2);font-size:clamp(14px,2vw,18px);line-height:1.5;max-width:680px;margin-top:16px}
 .section{margin:40px 0}
+.viewtoggle{display:inline-flex;gap:4px;margin-top:18px;background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:4px}
+.vt{font-family:var(--mono);font-size:12px;color:var(--txt2);text-decoration:none;padding:7px 14px;border-radius:7px}
+.vt:hover{color:var(--txt)}
+.vt.on{background:var(--amber);color:#1a1205;font-weight:700}
 .status-bar{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--txt3);margin-bottom:20px;flex-wrap:wrap}
 .status-bar .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
 .next-hero{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;position:relative;overflow:hidden;margin-bottom:24px}
@@ -93,6 +97,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     <div class="eyebrow">Live Feed &middot; T-minus</div>
     <h1>Launch <span class="gt">Schedule</span></h1>
     <p class="sub">Every upcoming orbital launch worldwide &mdash; live countdowns, provider status, and links to watch. Updated from the Launch Library 2 database.</p>
+    <div class="viewtoggle"><a class="vt on" href="schedule.html">&#9636; List</a><a class="vt" href="calendar.html">&#9638; Calendar</a></div>
   </section>
   <section class="section">
     <div class="status-bar"><span class="live-dot"></span><span id="dataStatus">Loading live launch data&hellip;</span></div>

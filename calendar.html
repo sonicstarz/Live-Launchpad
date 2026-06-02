@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Launchpad — Launch Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chivo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070a10;--bg2:#0d121c;--panel:#111827;--panel2:#161f30;--line:#1e2738;--line2:#2a3650;--txt:#e9eef6;--txt2:#8b9bb4;--txt3:#586780;--amber:#ffb627;--green:#3ddc84;--teal:#2dd4bf;--blue:#4d9fff;--purple:#a78bfa;--red:#ff5d5d;--coral:#ff8a5b;--pink:#f472b6;--mono:'Space Mono',monospace;--sans:'Chivo',sans-serif}
+:root[data-theme="light"]{--bg:#f4f6fb;--bg2:#fff;--panel:#fff;--panel2:#f0f3f9;--line:#dce3ef;--line2:#c4cfe0;--txt:#0f1726;--txt2:#48566e;--txt3:#7a89a3}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-weight:300;line-height:1.6;overflow-x:hidden;min-height:100vh;background-image:radial-gradient(circle at 12% 6%,rgba(77,159,255,.07),transparent 35%),radial-gradient(circle at 88% 22%,rgba(255,182,39,.05),transparent 42%);background-attachment:fixed;transition:background-color .3s,color .3s}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+:root[data-theme="light"] #stars{opacity:.12}
+.star{position:absolute;background:var(--txt);border-radius:50%;animation:tw ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.12}50%{opacity:.85}}
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 20px}
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:18px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt);font-weight:700;font-size:16px;white-space:nowrap;font-family:var(--sans)}
+.brand .blink{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.nav-links{display:flex;gap:2px;flex:1;flex-wrap:wrap}
+.nav-links a{color:var(--txt2);text-decoration:none;font-size:13px;font-family:var(--mono);padding:7px 11px;border-radius:7px;transition:all .15s}
+.nav-links a:hover{color:var(--txt);background:var(--panel2)}
+.nav-links a.active{color:var(--amber);background:rgba(255,182,39,.1)}
+.theme-btn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0}
+.theme-btn:hover{color:var(--amber);border-color:var(--amber)}
+.nav-toggle{display:none;background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:18px;place-items:center;transition:all .15s}
+.nav-toggle:hover{color:var(--amber);border-color:var(--amber)}
+@media(max-width:860px){
+  .nav-toggle{display:grid}
+  .nav-inner{position:relative}
+  .brand{margin-right:auto}
+  .nav-links{display:none;position:absolute;top:calc(100% + 10px);left:0;right:0;flex:none;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 16px 40px rgba(0,0,0,.45);z-index:60}
+  .nav-links.open{display:flex}
+  .nav-links a{padding:11px 14px;border-radius:8px;font-size:14px}
+}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.eyebrow::before{content:"";width:32px;height:1px;background:var(--amber)}
+h1{font-weight:900;font-size:clamp(32px,6vw,56px);line-height:1;letter-spacing:-.025em}
+.gt{background:linear-gradient(100deg,var(--amber),var(--coral) 45%,var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:var(--txt2);font-size:clamp(14px,2vw,18px);line-height:1.5;max-width:680px;margin-top:16px}
+.section{margin:40px 0}
+.viewtoggle{display:inline-flex;gap:4px;margin-top:18px;background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:4px}
+.vt{font-family:var(--mono);font-size:12px;color:var(--txt2);text-decoration:none;padding:7px 14px;border-radius:7px}
+.vt:hover{color:var(--txt)}
+.vt.on{background:var(--amber);color:#1a1205;font-weight:700}
+.status-bar{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--txt3);margin-bottom:18px;flex-wrap:wrap}
+.status-bar .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+/* calendar */
+.cal-controls{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.mtitle{font-size:20px;font-weight:800;letter-spacing:-.01em;min-width:170px}
+.cal-nav{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:15px}
+.cal-nav:hover{color:var(--amber);border-color:var(--amber)}
+.cal-today{background:var(--bg2);border:1px solid var(--line2);color:var(--txt2);font-family:var(--mono);font-size:12px;padding:8px 14px;border-radius:8px;cursor:pointer}
+.cal-today:hover{color:var(--amber);border-color:var(--amber)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--txt3);margin-left:auto}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.dow{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);text-align:center;padding:2px 0 4px}
+.cell{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-height:98px;padding:6px;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.cell.dim{opacity:.38}
+.cell.has{cursor:pointer}
+.cell.has:hover{border-color:var(--line2);transform:translateY(-1px)}
+.cell .dnum{font-family:var(--mono);font-size:12px;color:var(--txt2);align-self:flex-end;line-height:1}
+.cell.today{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
+.cell.today .dnum{color:var(--amber);font-weight:700}
+.chips{display:flex;flex-direction:column;gap:2px;min-width:0}
+.chip{font-family:var(--mono);font-size:9.5px;padding:2px 5px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid var(--txt3);background:var(--panel2)}
+.chip.go{border-color:var(--green);background:rgba(61,220,132,.12);color:#bdfad6}
+.chip.tbd{border-color:var(--amber);background:rgba(255,182,39,.12);color:#ffe2a0}
+.chip.hold{border-color:var(--red);background:rgba(255,93,93,.12);color:#ffc2c2}
+.chip.success{border-color:var(--blue);background:rgba(77,159,255,.12);color:#bcd9ff}
+.more{font-family:var(--mono);font-size:9.5px;color:var(--txt3);padding:0 5px}
+.daycount{display:none;font-family:var(--mono);font-size:10px;color:var(--amber);margin-top:auto}
+.loading{text-align:center;padding:40px;color:var(--txt3);font-family:var(--mono);font-size:13px}
+.note{background:rgba(77,159,255,.06);border:1px solid rgba(77,159,255,.22);border-radius:10px;padding:13px 16px;font-size:12px;color:var(--txt2);margin-top:18px;line-height:1.5}
+.note b{color:var(--blue)}
+@media(max-width:680px){
+  .cal-grid{gap:4px}
+  .cell{min-height:54px;border-radius:8px;padding:4px;gap:2px}
+  .chips{display:none}
+  .daycount{display:block}
+  .dow{font-size:9px}
+  .legend{margin-left:0}
+}
+/* day modal */
+.day-modal{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;padding:20px}
+.day-modal.open{display:flex}
+.day-box{background:var(--panel);border:1px solid var(--line2);border-radius:16px;max-width:560px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden}
+.day-head{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line)}
+.day-head span{font-weight:700;font-size:16px}
+.day-head button{background:var(--panel2);border:1px solid var(--line2);color:var(--txt);width:34px;height:34px;border-radius:8px;cursor:pointer}
+.day-list{overflow-y:auto;padding:14px 20px 20px}
+.dl{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px dashed var(--line)}
+.dl:last-child{border-bottom:none}
+.dl img{width:54px;height:54px;border-radius:9px;object-fit:cover;flex-shrink:0;background:var(--panel2);border:1px solid var(--line)}
+.dl-body{flex:1;min-width:0}
+.dl-name{font-weight:700;font-size:14px;line-height:1.3;margin-bottom:4px}
+.dl-meta{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-bottom:7px}
+.dl-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:6px;font-weight:700}
+.tag.go{background:rgba(61,220,132,.15);color:var(--green)}
+.tag.tbd{background:rgba(255,182,39,.15);color:var(--amber)}
+.tag.hold{background:rgba(255,93,93,.15);color:var(--red)}
+.tag.success{background:rgba(77,159,255,.15);color:var(--blue)}
+.dl-watch{font-family:var(--mono);font-size:11px;color:var(--blue);text-decoration:none}
+.dl-watch:hover{color:var(--amber)}
+footer{border-top:1px solid var(--line);margin-top:50px;padding:28px 0 50px;font-size:12px;color:var(--txt3)}
+footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber)}
+::-webkit-scrollbar{height:8px;width:8px}::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div id="site-header"></div>
+<div class="wrap">
+  <section class="section" style="padding-top:40px">
+    <div class="eyebrow">Live Feed &middot; Month View</div>
+    <h1>Launch <span class="gt">Calendar</span></h1>
+    <p class="sub">Every upcoming orbital launch worldwide, laid out by day. Tap any date to see what's flying. Times in your local timezone.</p>
+    <div class="viewtoggle"><a class="vt" href="schedule.html">&#9636; List</a><a class="vt on" href="calendar.html">&#9638; Calendar</a></div>
+  </section>
+  <section class="section">
+    <div class="status-bar"><span class="live-dot"></span><span id="dataStatus">Loading live launch data&hellip;</span></div>
+    <div class="cal-controls">
+      <button class="cal-nav" id="prevM" aria-label="Previous month">&#9664;</button>
+      <div class="mtitle" id="mtitle">&mdash;</div>
+      <button class="cal-nav" id="nextM" aria-label="Next month">&#9654;</button>
+      <button class="cal-today" id="todayBtn">Today</button>
+      <div class="legend">
+        <span><i style="background:var(--green)"></i> Go</span>
+        <span><i style="background:var(--amber)"></i> TBD</span>
+        <span><i style="background:var(--red)"></i> Hold</span>
+      </div>
+    </div>
+    <div id="cal"><div class="loading">&#8635; Fetching launches&hellip;</div></div>
+    <div class="note"><b>Live data</b> from The Space Devs' Launch Library 2. The calendar shows the upcoming window the feed returns, so far-future months fill in as launches get scheduled.</div>
+  </section>
+</div>
+<div class="day-modal" id="dayModal">
+  <div class="day-box">
+    <div class="day-head"><span id="dayTitle"></span><button id="dayClose" aria-label="Close">&#10005;</button></div>
+    <div class="day-list" id="dayList"></div>
+  </div>
+</div>
+<div id="site-footer"></div>
+
+<script>
+const FALLBACK=[
+  {name:"Falcon 9 Block 5 | Starlink Group 17-44",status:"Go",net:"2026-06-10T14:00:00Z",image:"https://thespacedevs-prod.nyc3.digitaloceanspaces.com/media/images/falcon2520925_image_20221009234147.png",vidURLs:[]},
+  {name:"Spectrum | Onward and Upward",status:"TBD",net:"2026-06-18T00:00:00Z",image:null,vidURLs:[]},
+  {name:"Long March 10B | Demo Flight",status:"TBD",net:"2026-06-24T00:00:00Z",image:null,vidURLs:[]},
+  {name:"Falcon 9 Block 5 | SDA Tranche 1",status:"TBD",net:"2026-06-24T09:30:00Z",image:null,vidURLs:[]}
+];
+let ALL=[], byDay={}, view=new Date();
+const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function pad(n){return String(n).padStart(2,'0');}
+function dkey(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function statusClass(s){if(!s)return'tbd';s=s.toLowerCase();if(s.includes('go'))return'go';if(s.includes('hold')||s.includes('fail'))return'hold';if(s.includes('success'))return'success';return'tbd';}
+function shortName(n){if(!n)return'Launch';return (n.split('|')[0]||n).trim();}
+function timeStr(net){try{return new Date(net).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});}catch(e){return'';}}
+function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
+
+function indexByDay(){
+  byDay={};
+  ALL.forEach(function(l){ if(!l.net)return; var k=dkey(new Date(l.net)); (byDay[k]=byDay[k]||[]).push(l); });
+  Object.keys(byDay).forEach(function(k){ byDay[k].sort(function(a,b){return new Date(a.net)-new Date(b.net);}); });
+}
+
+function render(){
+  document.getElementById('mtitle').textContent=view.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  var y=view.getFullYear(), m=view.getMonth();
+  var startDow=new Date(y,m,1).getDay();
+  var gridStart=new Date(y,m,1-startDow);
+  var todayK=dkey(new Date());
+  var h='<div class="cal-grid">';
+  DOW.forEach(function(d){h+='<div class="dow">'+d+'</div>';});
+  for(var i=0;i<42;i++){
+    var date=new Date(gridStart); date.setDate(gridStart.getDate()+i);
+    var k=dkey(date), inMonth=date.getMonth()===m, ls=byDay[k]||[];
+    var cls='cell'+(inMonth?'':' dim')+(k===todayK?' today':'')+(ls.length?' has':'');
+    h+='<div class="'+cls+'"'+(ls.length?' data-key="'+k+'"':'')+'>';
+    h+='<div class="dnum">'+date.getDate()+'</div>';
+    if(ls.length){
+      h+='<div class="chips">';
+      ls.slice(0,3).forEach(function(l){ h+='<div class="chip '+statusClass(l.status)+'" title="'+esc(l.name)+'">'+esc(shortName(l.name))+'</div>'; });
+      if(ls.length>3) h+='<div class="more">+'+(ls.length-3)+' more</div>';
+      h+='</div>';
+      h+='<div class="daycount">'+ls.length+' 🚀</div>';
+    }
+    h+='</div>';
+  }
+  h+='</div>';
+  document.getElementById('cal').innerHTML=h;
+  document.querySelectorAll('.cell.has').forEach(function(c){ c.onclick=function(){ openDay(c.dataset.key); }; });
+}
+
+function openDay(k){
+  var ls=byDay[k]||[]; if(!ls.length)return;
+  var d=new Date(ls[0].net);
+  document.getElementById('dayTitle').textContent=d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('dayList').innerHTML=ls.map(function(l){
+    var sc=statusClass(l.status);
+    var img=l.image?'<img src="'+esc(l.image)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'<div style="width:54px;height:54px;border-radius:9px;background:var(--panel2);display:grid;place-items:center;font-size:22px;flex-shrink:0">🚀</div>';
+    var watch=(l.vidURLs&&l.vidURLs.length&&l.vidURLs[0].url)?'<a class="dl-watch" href="'+esc(l.vidURLs[0].url)+'" target="_blank" rel="noopener">▶ Watch</a>':'';
+    return '<div class="dl">'+img+'<div class="dl-body"><div class="dl-name">'+esc(l.name||'Launch')+'</div>'
+      +'<div class="dl-meta">'+timeStr(l.net)+' local</div>'
+      +'<div class="dl-tags"><span class="tag '+sc+'">'+esc(l.status||'TBD')+'</span>'+watch+'</div></div></div>';
+  }).join('');
+  document.getElementById('dayModal').classList.add('open');
+}
+function closeDay(){ document.getElementById('dayModal').classList.remove('open'); }
+
+async function load(){
+  try{
+    var r=await fetch('/.netlify/functions/launches?kind=upcoming&limit=40');
+    if(!r.ok)throw new Error('fn');
+    var data=await r.json();
+    if(!data.results||!data.results.length)throw new Error('empty');
+    ALL=data.results; document.getElementById('dataStatus').textContent='Live · '+ALL.length+' upcoming launches';
+  }catch(e){ ALL=FALLBACK; document.getElementById('dataStatus').textContent='Cached snapshot · live feed unavailable'; }
+  indexByDay(); render();
+}
+
+document.getElementById('prevM').onclick=function(){ view=new Date(view.getFullYear(),view.getMonth()-1,1); render(); };
+document.getElementById('nextM').onclick=function(){ view=new Date(view.getFullYear(),view.getMonth()+1,1); render(); };
+document.getElementById('todayBtn').onclick=function(){ view=new Date(); render(); };
+document.getElementById('dayClose').onclick=closeDay;
+document.getElementById('dayModal').onclick=function(e){ if(e.target===this)closeDay(); };
+document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeDay(); });
+load();
+</script>
+<script>
+(function(){
+  var root=document.documentElement;
+  function setTheme(t){root.setAttribute('data-theme',t);var b=document.querySelector('.theme-btn');if(b)b.textContent=t==='light'?'☀':'☾';}
+  window.__toggleTheme=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
+  window.__toggleNav=function(){var n=document.querySelector('.nav-links');if(n)n.classList.toggle('open');};
+  setTheme('dark');
+  var page=(location.pathname.split('/').pop()||'index.html');
+  var links=[['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['learn.html','Learn'],['about.html','About']];
+  var nl=links.map(function(l){var a=(l[0]===page||(l[0]==='schedule.html'&&page==='calendar.html'))?' class="active"':'';return '<a href="'+l[0]+'"'+a+'>'+l[1]+'</a>';}).join('');
+  var h=document.getElementById('site-header');
+  if(h)h.outerHTML='<nav class="nav"><div class="nav-inner"><a class="brand" href="index.html">🚀 <span class="blink"></span> LIVE LAUNCHPAD</a><div class="nav-links">'+nl+'</div><button class="nav-toggle" onclick="__toggleNav()" aria-label="Menu">☰</button><button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">☾</button></div></nav>';
+  var f=document.getElementById('site-footer');
+  if(f)f.outerHTML='<footer><div class="wrap"><b>LIVE LAUNCHPAD</b> — mission control for the orbital era. Launch data from The Space Devs.<br>An independent project · <a href="about.html">About</a> · <a href="index-reliability.html">The Index</a></div></footer>';
+  var b=document.querySelector('.theme-btn');if(b)b.textContent='☾';
+  var c=document.getElementById('stars');if(c){var s='';for(var i=0;i<70;i++){var z=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);s+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+z+'px;height:'+z+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=s;}
+})();
+</script>
+</body>
+</html>
