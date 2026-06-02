@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Launchpad — Content Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chivo:wght@300;400;500;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+/* ===== SPACE AGE — shared site styles ===== */
+:root{
+  --bg:#070a10; --bg2:#0d121c; --panel:#111827; --panel2:#161f30;
+  --line:#1e2738; --line2:#2a3650;
+  --txt:#e9eef6; --txt2:#8b9bb4; --txt3:#586780;
+  --amber:#ffb627; --green:#3ddc84; --teal:#2dd4bf; --blue:#4d9fff;
+  --purple:#a78bfa; --red:#ff5d5d; --coral:#ff8a5b; --pink:#f472b6;
+  --mono:'Space Mono',monospace; --sans:'Chivo',sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f4f6fb; --bg2:#ffffff; --panel:#ffffff; --panel2:#f0f3f9;
+  --line:#dce3ef; --line2:#c4cfe0;
+  --txt:#0f1726; --txt2:#48566e; --txt3:#7a89a3;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--txt); font-family:var(--sans); font-weight:300;
+  line-height:1.6; overflow-x:hidden; min-height:100vh;
+  background-image:
+    radial-gradient(circle at 12% 6%, rgba(77,159,255,0.07), transparent 35%),
+    radial-gradient(circle at 88% 22%, rgba(255,182,39,0.05), transparent 42%),
+    radial-gradient(circle at 50% 92%, rgba(45,212,191,0.04), transparent 45%);
+  background-attachment:fixed; transition:background-color .3s,color .3s;
+}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+:root[data-theme="light"] #stars{opacity:.12}
+.star{position:absolute;background:var(--txt);border-radius:50%;animation:tw ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.12}50%{opacity:.85}}
+.wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:0 24px}
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt);font-weight:700;font-size:16px;letter-spacing:-.01em;white-space:nowrap}
+.brand .logo{width:26px;height:26px;display:grid;place-items:center;font-size:16px}
+.brand .blink{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.nav-links{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+.nav-links a{color:var(--txt2);text-decoration:none;font-size:13px;font-family:var(--mono);padding:7px 12px;border-radius:7px;transition:all .15s;letter-spacing:.02em}
+.nav-links a:hover{color:var(--txt);background:var(--panel2)}
+.nav-links a.active{color:var(--amber);background:rgba(255,182,39,.1)}
+.theme-btn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;display:grid;place-items:center;transition:all .15s}
+.theme-btn:hover{color:var(--amber);border-color:var(--amber)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.eyebrow::before{content:"";width:32px;height:1px;background:var(--amber)}
+h1{font-weight:900;font-size:clamp(30px,5vw,52px);line-height:.98;letter-spacing:-.025em}
+.gt{background:linear-gradient(100deg,var(--amber),var(--coral) 45%,var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:var(--txt2);font-size:clamp(15px,2vw,18px);line-height:1.5;max-width:680px;margin-top:16px;font-weight:300}
+footer{border-top:1px solid var(--line);margin-top:60px;padding:30px 0 60px;font-size:12px;color:var(--txt3);font-weight:300}
+footer b{color:var(--txt2);font-weight:400}
+footer a{color:var(--txt2);text-decoration:none}
+footer a:hover{color:var(--amber)}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--amber);color:#1a1205;font-family:var(--mono);font-weight:700;font-size:13px;padding:11px 20px;border-radius:9px;text-decoration:none;border:none;cursor:pointer;transition:transform .15s;text-transform:uppercase;letter-spacing:.05em}
+.btn:hover{transform:translateY(-2px)}
+.btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--txt2)}
+.btn.ghost:hover{color:var(--amber);border-color:var(--amber)}
+::-webkit-scrollbar{height:10px;width:10px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+
+/* ===== studio ===== */
+.studio-head{padding:36px 0 4px}
+.studio-msg{font-family:var(--mono);font-size:13px;min-height:18px;margin:18px 0 6px}
+.crumb{font-family:var(--mono);font-size:12px;color:var(--txt3);margin:22px 0 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.crumb a{color:var(--txt2);cursor:pointer;text-decoration:none}
+.crumb a:hover{color:var(--amber)}
+.crumb .sep{color:var(--line2)}
+.crumb .cur{color:var(--amber)}
+.addbar{margin:4px 0 20px}
+.empty{color:var(--txt3);font-family:var(--mono);font-size:13px;padding:18px 0}
+.row{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.row .thumb{width:104px;height:58px;border-radius:6px;object-fit:cover;flex:none;background:#0a0f18;border:1px solid var(--line)}
+.row .info{flex:1;min-width:0}
+.row .info h4{font-size:15px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .info .count{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-top:2px}
+.row .acts{display:flex;gap:6px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.iconbtn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);border-radius:7px;min-width:32px;height:32px;cursor:pointer;font-size:13px;display:grid;place-items:center;padding:0 8px}
+.iconbtn:hover{color:var(--amber);border-color:var(--amber)}
+.iconbtn:disabled{opacity:.35;cursor:default}
+.iconbtn.open{font-family:var(--mono);font-size:12px;padding:0 12px}
+.iconbtn.danger:hover{color:var(--red);border-color:var(--red)}
+/* modal */
+.modal{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;padding:20px}
+.modal.open{display:flex}
+.modal-box{background:var(--panel2);border:1px solid var(--line2);border-radius:16px;padding:24px;max-width:460px;width:100%}
+.modal-box h3{font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--amber);margin-bottom:18px}
+.field{margin-bottom:14px}
+.field label{display:block;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--txt2);margin-bottom:6px}
+.field input,.field textarea{width:100%;background:#0a0f18;border:1px solid var(--line2);border-radius:9px;color:var(--txt);font-family:var(--sans);font-size:14px;padding:10px 12px;outline:none}
+.field input:focus,.field textarea:focus{border-color:var(--amber)}
+.field textarea{min-height:70px;resize:vertical}
+.modal-thumb{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.modal-thumb img{width:120px;height:68px;border-radius:8px;object-fit:cover;border:1px solid var(--line);flex:none}
+.modal-thumb .t{font-family:var(--mono);font-size:12px;color:var(--txt2);line-height:1.4}
+.modal-acts{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div id="site-header"></div>
+
+<div class="wrap" id="ll-gate-content" hidden>
+  <div class="studio-head">
+    <div class="eyebrow">Content Studio · Editor</div>
+    <h1>Content <span class="gt">Studio</span></h1>
+    <p class="sub">Build libraries and courses, and add YouTube videos as you find good ones.
+    This is what will power the public Learning Center — everything here is free to viewers.</p>
+  </div>
+
+  <div class="studio-msg" id="studio-msg"></div>
+  <div id="studio"></div>
+
+  <div class="modal" id="modal"><div class="modal-box" id="modal-box"></div></div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>
+/* ===== CONTENT STUDIO APP ===== */
+var Studio = (function(){
+  var sb, host, msg;
+  var state = { lib:null, course:null, level:'lib', list:[] };
+  var TABLE = { lib:'libraries', course:'courses', video:'videos' };
+
+  function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
+  function toast(t,err){ msg.style.color=err?'#ff5d5d':'var(--green)'; msg.textContent=t||''; if(t){var cur=t;setTimeout(function(){if(msg.textContent===cur)msg.textContent='';},3000);} }
+  function parseYouTube(url){
+    if(!url) return '';
+    url=String(url).trim();
+    if(/^[\w-]{11}$/.test(url)) return url;
+    var m;
+    m=url.match(/[?&]v=([\w-]{11})/); if(m) return m[1];
+    m=url.match(/youtu\.be\/([\w-]{11})/); if(m) return m[1];
+    m=url.match(/\/embed\/([\w-]{11})/); if(m) return m[1];
+    m=url.match(/\/shorts\/([\w-]{11})/); if(m) return m[1];
+    return '';
+  }
+  function ytThumb(id){ return 'https://img.youtube.com/vi/'+id+'/mqdefault.jpg'; }
+  function ytMeta(id){
+    return fetch('https://www.youtube.com/oembed?format=json&url=https://www.youtube.com/watch?v='+id)
+      .then(function(r){ return r.ok?r.json():null; }).then(function(j){ return j?j.title:''; }).catch(function(){ return ''; });
+  }
+
+  async function fetchList(table, fk, fkVal){
+    var q=sb.from(table).select('*');
+    if(fk) q=q.eq(fk,fkVal);
+    var res=await q.order('sort_order',{ascending:true}).order('created_at',{ascending:true});
+    if(res.error){ toast('Load failed: '+res.error.message,true); return []; }
+    return res.data||[];
+  }
+  async function countChildren(table, fk, fkVal){
+    var res=await sb.from(table).select('*',{count:'exact',head:true}).eq(fk,fkVal);
+    return res.count||0;
+  }
+
+  function rowHTML(item,i,total,opts){
+    opts=opts||{};
+    var thumb=opts.thumb?'<img class="thumb" src="'+opts.thumb+'" alt="" loading="lazy">':'';
+    var sub=opts.sub!=null?'<div class="count">'+esc(opts.sub)+'</div>':'';
+    var open=opts.open?'<button class="iconbtn open" data-act="open">Open ›</button>':'';
+    return '<div class="row" data-i="'+i+'">'+thumb
+      +'<div class="info"><h4>'+esc(item.title)+'</h4>'+sub+'</div>'
+      +'<div class="acts">'
+      +'<button class="iconbtn" data-act="up"'+(i===0?' disabled':'')+' title="Move up">▲</button>'
+      +'<button class="iconbtn" data-act="down"'+(i===total-1?' disabled':'')+' title="Move down">▼</button>'
+      +'<button class="iconbtn" data-act="edit" title="Edit">✎</button>'
+      +'<button class="iconbtn danger" data-act="del" title="Delete">🗑</button>'
+      +open+'</div></div>';
+  }
+  function wireRows(level,list){
+    host.querySelectorAll('.row').forEach(function(r){
+      var item=list[+r.dataset.i], i=+r.dataset.i;
+      r.querySelectorAll('[data-act]').forEach(function(b){
+        b.onclick=function(){
+          var a=b.dataset.act;
+          if(a==='open') openItem(level,item);
+          else if(a==='edit') openEditor(level,item);
+          else if(a==='del') delItem(level,item);
+          else if(a==='up') reorder(level,list,i,i-1);
+          else if(a==='down') reorder(level,list,i,i+1);
+        };
+      });
+    });
+    host.querySelectorAll('[data-nav]').forEach(function(a){
+      a.onclick=function(){ var n=a.dataset.nav; if(n==='lib')renderLib(); else if(n==='course')renderCourse(); };
+    });
+  }
+
+  async function renderLib(){
+    state.level='lib'; state.lib=null; state.course=null;
+    var libs=await fetchList('libraries');
+    var counts=await Promise.all(libs.map(function(L){return countChildren('courses','library_id',L.id);}));
+    state.list=libs;
+    var h='<div class="crumb"><span class="cur">Libraries</span></div>';
+    h+='<div class="addbar"><button class="btn" id="add">+ New library</button></div>';
+    if(!libs.length) h+='<div class="empty">No libraries yet — create your first one.</div>';
+    libs.forEach(function(L,i){ h+=rowHTML(L,i,libs.length,{sub:counts[i]+' course'+(counts[i]===1?'':'s'),open:true}); });
+    host.innerHTML=h;
+    document.getElementById('add').onclick=function(){ openEditor('lib',null); };
+    wireRows('lib',libs);
+  }
+  async function renderCourse(){
+    state.level='course'; state.course=null;
+    var courses=await fetchList('courses','library_id',state.lib.id);
+    var counts=await Promise.all(courses.map(function(c){return countChildren('videos','course_id',c.id);}));
+    state.list=courses;
+    var h='<div class="crumb"><a data-nav="lib">Libraries</a><span class="sep">/</span><span class="cur">'+esc(state.lib.title)+'</span></div>';
+    h+='<div class="addbar"><button class="btn" id="add">+ New course</button></div>';
+    if(!courses.length) h+='<div class="empty">No courses in this library yet.</div>';
+    courses.forEach(function(c,i){ h+=rowHTML(c,i,courses.length,{sub:counts[i]+' video'+(counts[i]===1?'':'s'),open:true}); });
+    host.innerHTML=h;
+    document.getElementById('add').onclick=function(){ openEditor('course',null); };
+    wireRows('course',courses);
+  }
+  async function renderVideo(){
+    state.level='video';
+    var vids=await fetchList('videos','course_id',state.course.id);
+    state.list=vids;
+    var h='<div class="crumb"><a data-nav="lib">Libraries</a><span class="sep">/</span><a data-nav="course">'+esc(state.lib.title)+'</a><span class="sep">/</span><span class="cur">'+esc(state.course.title)+'</span></div>';
+    h+='<div class="addbar"><button class="btn" id="add">+ Add video</button></div>';
+    if(!vids.length) h+='<div class="empty">No videos in this course yet — paste a YouTube link to add one.</div>';
+    vids.forEach(function(v,i){ h+=rowHTML(v,i,vids.length,{thumb:ytThumb(v.youtube_id)}); });
+    host.innerHTML=h;
+    document.getElementById('add').onclick=function(){ openEditor('video',null); };
+    wireRows('video',vids);
+  }
+  function reRender(level){ if(level==='lib')renderLib(); else if(level==='course')renderCourse(); else renderVideo(); }
+
+  function openItem(level,item){
+    if(level==='lib'){ state.lib=item; renderCourse(); }
+    else if(level==='course'){ state.course=item; renderVideo(); }
+  }
+
+  /* ----- editor modal ----- */
+  function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+  function openEditor(level,item){
+    var isVid=level==='video';
+    var label=level==='lib'?'library':level==='course'?'course':'video';
+    var ytUrl=item&&item.youtube_id?('https://youtu.be/'+item.youtube_id):'';
+    var box=document.getElementById('modal-box');
+    box.innerHTML='<h3>'+(item?'Edit ':'New ')+label+'</h3>'
+      +(isVid?'<div class="field"><label>YouTube link</label><input id="f-url" placeholder="https://youtube.com/watch?v=…" value="'+esc(ytUrl)+'"></div>'
+              +'<div class="modal-thumb" id="f-thumbwrap" style="display:none"><img id="f-thumb" src="" alt=""><span class="t" id="f-vidtitle"></span></div>':'')
+      +'<div class="field"><label>Title</label><input id="f-title" value="'+esc(item?item.title:'')+'"></div>'
+      +'<div class="field"><label>Description <span style="text-transform:none;color:var(--txt3)">(optional)</span></label><textarea id="f-desc">'+esc(item?(item.description||''):'')+'</textarea></div>'
+      +'<div class="modal-acts"><button class="btn ghost" id="f-cancel">Cancel</button><button class="btn" id="f-save">Save</button></div>';
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('f-cancel').onclick=closeModal;
+    document.getElementById('f-save').onclick=function(){ saveEditor(level,item); };
+    if(isVid){
+      var urlEl=document.getElementById('f-url');
+      urlEl.oninput=function(){ previewVid(urlEl.value); };
+      if(ytUrl) previewVid(ytUrl);
+    }
+    var focusEl=document.getElementById(isVid?'f-url':'f-title'); if(focusEl) focusEl.focus();
+  }
+  function previewVid(url){
+    var id=parseYouTube(url);
+    var wrap=document.getElementById('f-thumbwrap'), img=document.getElementById('f-thumb'), tEl=document.getElementById('f-vidtitle');
+    if(id){
+      wrap.style.display='flex'; img.src=ytThumb(id);
+      var titleInput=document.getElementById('f-title');
+      if(!titleInput.value){ ytMeta(id).then(function(t){ if(t&&!titleInput.value){ titleInput.value=t; } if(t) tEl.textContent=t; }); }
+    } else { wrap.style.display='none'; }
+  }
+  async function saveEditor(level,item){
+    var title=document.getElementById('f-title').value.trim();
+    var desc=document.getElementById('f-desc').value.trim();
+    if(!title){ toast('Title is required',true); return; }
+    var payload={ title:title, description:desc };
+    if(level==='video'){
+      var id=parseYouTube(document.getElementById('f-url').value);
+      if(!id){ toast('Enter a valid YouTube link',true); return; }
+      payload.youtube_id=id;
+    }
+    document.getElementById('f-save').disabled=true;
+    var res;
+    if(item){ res=await sb.from(TABLE[level]).update(payload).eq('id',item.id); }
+    else {
+      if(level==='course') payload.library_id=state.lib.id;
+      if(level==='video')  payload.course_id=state.course.id;
+      payload.sort_order=state.list.length;
+      res=await sb.from(TABLE[level]).insert(payload);
+    }
+    if(res.error){ toast('Save failed: '+res.error.message,true); document.getElementById('f-save').disabled=false; return; }
+    closeModal(); reRender(level); toast('Saved');
+  }
+  async function delItem(level,item){
+    var extra=level==='video'?'':' This also deletes everything inside it.';
+    if(!confirm('Delete “'+item.title+'”?'+extra)) return;
+    var res=await sb.from(TABLE[level]).delete().eq('id',item.id);
+    if(res.error){ toast('Delete failed: '+res.error.message,true); return; }
+    reRender(level); toast('Deleted');
+  }
+  async function reorder(level,list,i,j){
+    if(j<0||j>=list.length) return;
+    var arr=list.slice(); var t=arr[i]; arr[i]=arr[j]; arr[j]=t;
+    var res=await Promise.all(arr.map(function(it,idx){ return sb.from(TABLE[level]).update({sort_order:idx}).eq('id',it.id); }));
+    var err=res.find(function(r){return r&&r.error;});
+    if(err){ toast('Reorder failed: '+err.error.message,true); return; }
+    reRender(level);
+  }
+
+  function init(client){ sb=client; host=document.getElementById('studio'); msg=document.getElementById('studio-msg'); renderLib(); }
+  return { init:init };
+})();
+
+// ll-auth.js calls this once the editor is logged in and the page is revealed.
+window.LL_ON_EDITOR = function(sb){ Studio.init(sb); };
+</script>
+
+<script>window.LL_GATE = { title:'CONTENT STUDIO', tagline:'Editors only. The studio for building the Learning Center.' };</script>
+<script type="module" src="ll-auth.js"></script>
+
+<script>
+/* ===== SPACE AGE — base ===== */
+(function(){
+  var root=document.documentElement;
+  function setTheme(t){root.setAttribute('data-theme',t);var b=document.querySelector('.theme-btn');if(b)b.textContent=t==='light'?'☀':'☾';}
+  window.__toggleTheme=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
+  setTheme('dark');
+  function stars(){var c=document.getElementById('stars');if(!c)return;var h='';for(var i=0;i<90;i++){var s=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);h+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+s+'px;height:'+s+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=h;}
+  stars();
+})();
+(function(){
+  var page=(location.pathname.split('/').pop()||'index.html');
+  var links=[
+    ['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],
+    ['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['about.html','About']
+  ];
+  var navlinks=links.map(function(l){
+    var active=(l[0]===page)?' class="active"':'';
+    return '<a href="'+l[0]+'"'+active+'>'+l[1]+'</a>';
+  }).join('');
+  var header='<nav class="nav"><div class="nav-inner">'
+    +'<a class="brand" href="index.html"><span class="logo">🚀</span><span class="blink"></span> LIVE LAUNCHPAD</a>'
+    +'<div class="nav-links">'+navlinks+'</div>'
+    +'<button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">☾</button>'
+    +'</div></nav>';
+  var footer='<footer><div class="wrap">'
+    +'<b>LIVE LAUNCHPAD</b> — mission control for the orbital era. Built with data from The Space Devs &amp; friends.<br>'
+    +'An independent project · <a href="about.html">About</a> · <a href="index-reliability.html">The Index</a>'
+    +'</div></footer>';
+  var m=document.getElementById('site-header'); if(m) m.outerHTML=header;
+  var f=document.getElementById('site-footer'); if(f) f.outerHTML=footer;
+  var t=document.documentElement.getAttribute('data-theme')||'dark';
+  var b=document.querySelector('.theme-btn'); if(b) b.textContent=(t==='light'?'☀':'☾');
+})();
+</script>
+</body>
+</html>

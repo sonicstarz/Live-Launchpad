@@ -97,6 +97,12 @@ function reveal(user) {
   bar.innerHTML = `<span>✎ Editor mode — ${esc(user.email || '')}</span><button id="llg-logout">Log out</button>`;
   document.body.appendChild(bar);
   el('llg-logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+  // Expose the authenticated client so editor tools (e.g. studio.html) can reuse the session.
+  window.LLAuth = { sb, user };
+  if (typeof window.LL_ON_EDITOR === 'function') {
+    try { window.LL_ON_EDITOR(sb, user); } catch (err) { console.error(err); }
+  }
 }
 
 async function roleOf(userId) {
