@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Launchpad — Learning Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chivo:wght@300;400;500;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+/* ===== SPACE AGE — shared site styles ===== */
+:root{
+  --bg:#070a10; --bg2:#0d121c; --panel:#111827; --panel2:#161f30;
+  --line:#1e2738; --line2:#2a3650;
+  --txt:#e9eef6; --txt2:#8b9bb4; --txt3:#586780;
+  --amber:#ffb627; --green:#3ddc84; --teal:#2dd4bf; --blue:#4d9fff;
+  --purple:#a78bfa; --red:#ff5d5d; --coral:#ff8a5b; --pink:#f472b6;
+  --mono:'Space Mono',monospace; --sans:'Chivo',sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f4f6fb; --bg2:#ffffff; --panel:#ffffff; --panel2:#f0f3f9;
+  --line:#dce3ef; --line2:#c4cfe0;
+  --txt:#0f1726; --txt2:#48566e; --txt3:#7a89a3;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--txt); font-family:var(--sans); font-weight:300;
+  line-height:1.6; overflow-x:hidden; min-height:100vh;
+  background-image:
+    radial-gradient(circle at 12% 6%, rgba(77,159,255,0.07), transparent 35%),
+    radial-gradient(circle at 88% 22%, rgba(255,182,39,0.05), transparent 42%),
+    radial-gradient(circle at 50% 92%, rgba(45,212,191,0.04), transparent 45%);
+  background-attachment:fixed;
+  transition:background-color .3s,color .3s;
+}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+:root[data-theme="light"] #stars{opacity:.12}
+.star{position:absolute;background:var(--txt);border-radius:50%;animation:tw ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.12}50%{opacity:.85}}
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 24px}
+
+/* ===== NAV ===== */
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt);font-weight:700;font-size:16px;letter-spacing:-.01em;white-space:nowrap}
+.brand .logo{width:26px;height:26px;display:grid;place-items:center;font-size:16px}
+.brand .blink{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.nav-links{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+.nav-links a{color:var(--txt2);text-decoration:none;font-size:13px;font-family:var(--mono);
+  padding:7px 12px;border-radius:7px;transition:all .15s;letter-spacing:.02em}
+.nav-links a:hover{color:var(--txt);background:var(--panel2)}
+.nav-links a.active{color:var(--amber);background:rgba(255,182,39,.1)}
+.theme-btn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);
+  width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;display:grid;place-items:center;transition:all .15s}
+.theme-btn:hover{color:var(--amber);border-color:var(--amber)}
+
+/* ===== shared bits ===== */
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.eyebrow::before{content:"";width:32px;height:1px;background:var(--amber)}
+h1{font-weight:900;font-size:clamp(34px,6vw,64px);line-height:.98;letter-spacing:-.025em}
+.gt{background:linear-gradient(100deg,var(--amber),var(--coral) 45%,var(--pink));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:var(--txt2);font-size:clamp(15px,2vw,20px);line-height:1.5;max-width:760px;margin-top:18px;font-weight:300}
+.section{margin:48px 0}
+.sec-head{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--txt);font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.sec-head .idx{color:var(--amber)}
+.sec-sub{color:var(--txt2);font-size:14px;margin-bottom:22px;max-width:680px}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;transition:border-color .2s,transform .2s}
+a.card{text-decoration:none;color:inherit;display:block}
+a.card:hover{border-color:var(--line2);transform:translateY(-2px)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+
+.pill{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;padding:3px 9px;border-radius:6px;font-weight:700}
+.pill.live{background:rgba(61,220,132,.14);color:var(--green)}
+.pill.soon{background:rgba(255,182,39,.14);color:var(--amber)}
+.pill.idea{background:rgba(167,139,250,.14);color:var(--purple)}
+
+footer{border-top:1px solid var(--line);margin-top:60px;padding:30px 0 60px;font-size:12px;color:var(--txt3);font-weight:300}
+footer b{color:var(--txt2);font-weight:400}
+footer a{color:var(--txt2);text-decoration:none}
+footer a:hover{color:var(--amber)}
+
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--amber);color:#1a1205;
+  font-family:var(--mono);font-weight:700;font-size:13px;padding:11px 20px;border-radius:9px;
+  text-decoration:none;border:none;cursor:pointer;transition:transform .15s;text-transform:uppercase;letter-spacing:.05em}
+.btn:hover{transform:translateY(-2px)}
+.btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--txt2)}
+.btn.ghost:hover{color:var(--amber);border-color:var(--amber)}
+
+/* ===== learning center bits ===== */
+.lc-head{padding:40px 0 4px}
+.lesson{display:flex;flex-direction:column;gap:8px}
+.lesson .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.lesson h4{font-size:17px;font-weight:700;color:var(--txt);letter-spacing:-.01em}
+.lesson p{color:var(--txt2);font-size:13px;line-height:1.55}
+.lesson .meta{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-top:2px}
+.phase{display:flex;gap:14px;align-items:flex-start}
+.phase .num{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--amber);flex:none;width:34px}
+.phase h4{font-size:15px;font-weight:700;margin-bottom:3px}
+.phase p{color:var(--txt2);font-size:13px}
+.note{background:rgba(255,182,39,.07);border:1px solid rgba(255,182,39,.2);border-radius:12px;
+  padding:16px 20px;font-size:13px;color:var(--txt2);font-family:var(--mono);line-height:1.6}
+.note b{color:var(--amber)}
+::-webkit-scrollbar{height:10px;width:10px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+
+<div id="site-header"></div>
+
+<!-- Everything inside #ll-gate-content is hidden until an editor logs in. -->
+<div class="wrap" id="ll-gate-content" hidden>
+  <div class="lc-head">
+    <div class="eyebrow">Learning Center · Editor preview</div>
+    <h1>The <span class="gt">Learning Center</span></h1>
+    <p class="sub">Free space-education first — short, clear lessons on how rockets work, how
+    orbits behave, and how to read what's launching this week. Accounts and progress tracking
+    come next; a paywall for custom content comes last.</p>
+  </div>
+
+  <div class="section">
+    <div class="note"><b>You're in editor preview.</b> The public sees a “Coming Soon” splash here.
+    This is the scaffold to build on — nothing below is live to visitors yet.</div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><span class="idx">01</span> Planned lessons</div>
+    <div class="sec-sub">Starter set of free lessons. These are drafts — titles and order will change.</div>
+    <div class="grid g3">
+      <div class="card lesson">
+        <div class="top"><h4>How a Rocket Works</h4><span class="pill soon">Draft</span></div>
+        <p>Thrust, stages, and why rockets throw mass downward to go up. The 5-minute version.</p>
+        <div class="meta">Video · ~5 min</div>
+      </div>
+      <div class="card lesson">
+        <div class="top"><h4>What an Orbit Actually Is</h4><span class="pill soon">Draft</span></div>
+        <p>Falling sideways fast enough to keep missing the ground. LEO, GEO, and why altitude matters.</p>
+        <div class="meta">Video · ~6 min</div>
+      </div>
+      <div class="card lesson">
+        <div class="top"><h4>Reading a Launch Schedule</h4><span class="pill soon">Draft</span></div>
+        <p>Decode windows, scrubs, providers, and pads using the live Schedule page on this site.</p>
+        <div class="meta">Guide · ~4 min</div>
+      </div>
+      <div class="card lesson">
+        <div class="top"><h4>Why Rockets Land Now</h4><span class="pill idea">Idea</span></div>
+        <p>Reusability, the booster-landing problem, and what changed. Pairs with the arcade's Booster Landing game.</p>
+        <div class="meta">Video · TBD</div>
+      </div>
+      <div class="card lesson">
+        <div class="top"><h4>Anatomy of a Mission</h4><span class="pill idea">Idea</span></div>
+        <p>From payload to orbit insertion — the phases every launch goes through.</p>
+        <div class="meta">Video · TBD</div>
+      </div>
+      <div class="card lesson">
+        <div class="top"><h4>The Space Age Index, Explained</h4><span class="pill idea">Idea</span></div>
+        <p>How to read this site's reliability index and what the numbers mean.</p>
+        <div class="meta">Guide · TBD</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><span class="idx">02</span> Build phases</div>
+    <div class="sec-sub">Phased rollout (from the project plan). Don't build a later phase until the one before proves out.</div>
+    <div class="grid g3">
+      <div class="card phase"><div class="num">1</div><div><h4>Free videos <span class="pill soon">Now</span></h4><p>Publish free lessons (YouTube unlisted or Mux). No login needed to watch.</p></div></div>
+      <div class="card phase"><div class="num">2</div><div><h4>Accounts + progress <span class="pill idea">Next</span></h4><p>Sign in, track which lessons you've finished. Built on the Supabase auth we're standing up now.</p></div></div>
+      <div class="card phase"><div class="num">3</div><div><h4>Paywall <span class="pill idea">Last</span></h4><p>Stripe for premium custom content — only after the free tier proves itself.</p></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>window.LL_GATE = { title:'LEARNING CENTER', tagline:"Lessons for the orbital era are taking shape. We'll open the doors soon." };</script>
+<script type="module" src="ll-auth.js"></script>
+
+<script>
+/* ===== SPACE AGE — base ===== */
+(function(){
+  var root=document.documentElement;
+  function setTheme(t){root.setAttribute('data-theme',t);var b=document.querySelector('.theme-btn');if(b)b.textContent=t==='light'?'☀':'☾';}
+  window.__toggleTheme=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
+  setTheme('dark');
+  function stars(){var c=document.getElementById('stars');if(!c)return;var h='';for(var i=0;i<90;i++){var s=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);h+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+s+'px;height:'+s+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=h;}
+  stars();
+})();
+/* ===== SHARED HEADER + FOOTER (single source of truth) ===== */
+(function(){
+  var page=(location.pathname.split('/').pop()||'index.html');
+  var links=[
+    ['index.html','Home'],
+    ['index-reliability.html','The Index'],
+    ['schedule.html','Schedule'],
+    ['news.html','News'],
+    ['development.html','In Dev'],
+    ['games.html','Arcade'],
+    ['about.html','About']
+  ];
+  var navlinks=links.map(function(l){
+    var active=(l[0]===page||(page===''&&l[0]==='index.html'))?' class="active"':'';
+    return '<a href="'+l[0]+'"'+active+'>'+l[1]+'</a>';
+  }).join('');
+  var header=''
+    +'<nav class="nav"><div class="nav-inner">'
+    +'<a class="brand" href="index.html"><span class="logo">🚀</span><span class="blink"></span> LIVE LAUNCHPAD</a>'
+    +'<div class="nav-links">'+navlinks+'</div>'
+    +'<button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">☾</button>'
+    +'</div></nav>';
+  var footer=''
+    +'<footer><div class="wrap">'
+    +'<b>LIVE LAUNCHPAD</b> — mission control for the orbital era. Built with data from The Space Devs &amp; friends.<br>'
+    +'An independent project · <a href="about.html">About</a> · <a href="index-reliability.html">The Index</a>'
+    +'</div></footer>';
+
+  var mount=document.getElementById('site-header');
+  if(mount) mount.outerHTML=header;
+  var fmount=document.getElementById('site-footer');
+  if(fmount) fmount.outerHTML=footer;
+
+  var t=document.documentElement.getAttribute('data-theme')||'dark';
+  var b=document.querySelector('.theme-btn'); if(b) b.textContent=(t==='light'?'☀':'☾');
+})();
+</script>
+</body>
+</html>
