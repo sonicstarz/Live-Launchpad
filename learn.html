@@ -31,161 +31,219 @@ body{
     radial-gradient(circle at 12% 6%, rgba(77,159,255,0.07), transparent 35%),
     radial-gradient(circle at 88% 22%, rgba(255,182,39,0.05), transparent 42%),
     radial-gradient(circle at 50% 92%, rgba(45,212,191,0.04), transparent 45%);
-  background-attachment:fixed;
-  transition:background-color .3s,color .3s;
+  background-attachment:fixed; transition:background-color .3s,color .3s;
 }
 #stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
 :root[data-theme="light"] #stars{opacity:.12}
 .star{position:absolute;background:var(--txt);border-radius:50%;animation:tw ease-in-out infinite}
 @keyframes tw{0%,100%{opacity:.12}50%{opacity:.85}}
-.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 24px}
-
-/* ===== NAV ===== */
-.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);
-  backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 24px}
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .nav-inner{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:24px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt);font-weight:700;font-size:16px;letter-spacing:-.01em;white-space:nowrap}
 .brand .logo{width:26px;height:26px;display:grid;place-items:center;font-size:16px}
 .brand .blink{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 .nav-links{display:flex;gap:4px;flex:1;flex-wrap:wrap}
-.nav-links a{color:var(--txt2);text-decoration:none;font-size:13px;font-family:var(--mono);
-  padding:7px 12px;border-radius:7px;transition:all .15s;letter-spacing:.02em}
+.nav-links a{color:var(--txt2);text-decoration:none;font-size:13px;font-family:var(--mono);padding:7px 12px;border-radius:7px;transition:all .15s;letter-spacing:.02em}
 .nav-links a:hover{color:var(--txt);background:var(--panel2)}
 .nav-links a.active{color:var(--amber);background:rgba(255,182,39,.1)}
-.theme-btn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);
-  width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;display:grid;place-items:center;transition:all .15s}
+.theme-btn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;display:grid;place-items:center;transition:all .15s}
 .theme-btn:hover{color:var(--amber);border-color:var(--amber)}
-
-/* ===== shared bits ===== */
-.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;
-  color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
 .eyebrow::before{content:"";width:32px;height:1px;background:var(--amber)}
-h1{font-weight:900;font-size:clamp(34px,6vw,64px);line-height:.98;letter-spacing:-.025em}
-.gt{background:linear-gradient(100deg,var(--amber),var(--coral) 45%,var(--pink));
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.sub{color:var(--txt2);font-size:clamp(15px,2vw,20px);line-height:1.5;max-width:760px;margin-top:18px;font-weight:300}
-.section{margin:48px 0}
-.sec-head{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--txt);font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.sec-head .idx{color:var(--amber)}
-.sec-sub{color:var(--txt2);font-size:14px;margin-bottom:22px;max-width:680px}
-
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;transition:border-color .2s,transform .2s}
-a.card{text-decoration:none;color:inherit;display:block}
-a.card:hover{border-color:var(--line2);transform:translateY(-2px)}
-.grid{display:grid;gap:16px}
-.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
-.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
-
-.pill{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
-  text-transform:uppercase;padding:3px 9px;border-radius:6px;font-weight:700}
-.pill.live{background:rgba(61,220,132,.14);color:var(--green)}
-.pill.soon{background:rgba(255,182,39,.14);color:var(--amber)}
-.pill.idea{background:rgba(167,139,250,.14);color:var(--purple)}
-
+h1{font-weight:900;font-size:clamp(30px,5vw,52px);line-height:.98;letter-spacing:-.025em}
+.gt{background:linear-gradient(100deg,var(--amber),var(--coral) 45%,var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:var(--txt2);font-size:clamp(15px,2vw,18px);line-height:1.5;max-width:720px;margin-top:16px;font-weight:300}
 footer{border-top:1px solid var(--line);margin-top:60px;padding:30px 0 60px;font-size:12px;color:var(--txt3);font-weight:300}
 footer b{color:var(--txt2);font-weight:400}
 footer a{color:var(--txt2);text-decoration:none}
 footer a:hover{color:var(--amber)}
-
-.btn{display:inline-flex;align-items:center;gap:8px;background:var(--amber);color:#1a1205;
-  font-family:var(--mono);font-weight:700;font-size:13px;padding:11px 20px;border-radius:9px;
-  text-decoration:none;border:none;cursor:pointer;transition:transform .15s;text-transform:uppercase;letter-spacing:.05em}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--amber);color:#1a1205;font-family:var(--mono);font-weight:700;font-size:13px;padding:11px 20px;border-radius:9px;text-decoration:none;border:none;cursor:pointer;transition:transform .15s;text-transform:uppercase;letter-spacing:.05em}
 .btn:hover{transform:translateY(-2px)}
 .btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--txt2)}
 .btn.ghost:hover{color:var(--amber);border-color:var(--amber)}
-
-/* ===== learning center bits ===== */
-.lc-head{padding:40px 0 4px}
-.lesson{display:flex;flex-direction:column;gap:8px}
-.lesson .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.lesson h4{font-size:17px;font-weight:700;color:var(--txt);letter-spacing:-.01em}
-.lesson p{color:var(--txt2);font-size:13px;line-height:1.55}
-.lesson .meta{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-top:2px}
-.phase{display:flex;gap:14px;align-items:flex-start}
-.phase .num{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--amber);flex:none;width:34px}
-.phase h4{font-size:15px;font-weight:700;margin-bottom:3px}
-.phase p{color:var(--txt2);font-size:13px}
-.note{background:rgba(255,182,39,.07);border:1px solid rgba(255,182,39,.2);border-radius:12px;
-  padding:16px 20px;font-size:13px;color:var(--txt2);font-family:var(--mono);line-height:1.6}
-.note b{color:var(--amber)}
 ::-webkit-scrollbar{height:10px;width:10px}
 ::-webkit-scrollbar-track{background:var(--bg2)}
 ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+
+/* ===== learning center ===== */
+.lc-head{padding:38px 0 4px}
+.lc-msg{font-family:var(--mono);font-size:13px;color:var(--txt3);min-height:18px;margin:18px 0}
+.library{margin:40px 0}
+.library > h2{font-size:24px;font-weight:900;letter-spacing:-.02em;margin-bottom:4px}
+.library > p{color:var(--txt2);font-size:14px;margin-bottom:8px;max-width:720px}
+.course{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:16px}
+.course-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:4px}
+.course-head h3{font-size:17px;font-weight:700}
+.course-head .prog{font-family:var(--mono);font-size:12px;color:var(--txt3);white-space:nowrap}
+.course-head .prog.done{color:var(--green)}
+.course > p{color:var(--txt2);font-size:13px;margin-bottom:14px}
+.vgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.vcard{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .2s;position:relative}
+.vcard:hover{border-color:var(--line2);transform:translateY(-2px)}
+.vthumb{position:relative;aspect-ratio:16/9;background:#0a0f18}
+.vthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.vthumb .play{position:absolute;inset:0;display:grid;place-items:center;font-size:30px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6);opacity:.9}
+.vcard.done .vthumb::after{content:"✓ Watched";position:absolute;top:8px;left:8px;background:rgba(61,220,132,.9);color:#04130a;font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 7px;border-radius:5px}
+.vmeta{padding:11px 13px}
+.vmeta h4{font-size:14px;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.empty{color:var(--txt3);font-family:var(--mono);font-size:14px;padding:30px 0;text-align:center}
+/* player modal */
+.player{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;padding:20px}
+.player.open{display:flex}
+.player-box{background:var(--panel);border:1px solid var(--line2);border-radius:16px;max-width:860px;width:100%;overflow:hidden}
+.player-frame{position:relative;aspect-ratio:16/9;background:#000}
+.player-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.player-meta{padding:18px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.player-meta h3{font-size:17px;font-weight:700;margin-bottom:4px}
+.player-meta p{color:var(--txt2);font-size:13px;max-width:560px}
+.player-close{position:absolute;top:14px;right:16px;z-index:2;background:rgba(0,0,0,.5);border:1px solid var(--line2);color:#fff;width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px}
+.btn.done{background:var(--green);color:#04130a}
 </style>
 </head>
 <body>
 <div id="stars"></div>
-
 <div id="site-header"></div>
 
-<!-- Everything inside #ll-gate-content is hidden until an editor logs in. -->
 <div class="wrap" id="ll-gate-content" hidden>
   <div class="lc-head">
-    <div class="eyebrow">Learning Center · Editor preview</div>
+    <div class="eyebrow">Learning Center</div>
     <h1>The <span class="gt">Learning Center</span></h1>
-    <p class="sub">Free space-education first — short, clear lessons on how rockets work, how
-    orbits behave, and how to read what's launching this week. Accounts and progress tracking
-    come next; a paywall for custom content comes last.</p>
+    <p class="sub">A free, curated path through the best space-education videos on the web.
+    Sign in and your progress is saved — pick up right where you left off.</p>
   </div>
+  <div class="lc-msg" id="lc-msg">Loading lessons…</div>
+  <div id="learn"></div>
 
-  <div class="section">
-    <div class="note"><b>You're in editor preview.</b> The public sees a “Coming Soon” splash here.
-    This is the scaffold to build on — nothing below is live to visitors yet.</div>
-  </div>
-
-  <div class="section">
-    <div class="sec-head"><span class="idx">01</span> Planned lessons</div>
-    <div class="sec-sub">Starter set of free lessons. These are drafts — titles and order will change.</div>
-    <div class="grid g3">
-      <div class="card lesson">
-        <div class="top"><h4>How a Rocket Works</h4><span class="pill soon">Draft</span></div>
-        <p>Thrust, stages, and why rockets throw mass downward to go up. The 5-minute version.</p>
-        <div class="meta">Video · ~5 min</div>
+  <div class="player" id="player">
+    <div class="player-box">
+      <div class="player-frame">
+        <button class="player-close" id="player-close" aria-label="Close">✕</button>
+        <iframe id="player-frame" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
       </div>
-      <div class="card lesson">
-        <div class="top"><h4>What an Orbit Actually Is</h4><span class="pill soon">Draft</span></div>
-        <p>Falling sideways fast enough to keep missing the ground. LEO, GEO, and why altitude matters.</p>
-        <div class="meta">Video · ~6 min</div>
+      <div class="player-meta">
+        <div><h3 id="player-title"></h3><p id="player-desc"></p></div>
+        <button class="btn" id="player-complete"></button>
       </div>
-      <div class="card lesson">
-        <div class="top"><h4>Reading a Launch Schedule</h4><span class="pill soon">Draft</span></div>
-        <p>Decode windows, scrubs, providers, and pads using the live Schedule page on this site.</p>
-        <div class="meta">Guide · ~4 min</div>
-      </div>
-      <div class="card lesson">
-        <div class="top"><h4>Why Rockets Land Now</h4><span class="pill idea">Idea</span></div>
-        <p>Reusability, the booster-landing problem, and what changed. Pairs with the arcade's Booster Landing game.</p>
-        <div class="meta">Video · TBD</div>
-      </div>
-      <div class="card lesson">
-        <div class="top"><h4>Anatomy of a Mission</h4><span class="pill idea">Idea</span></div>
-        <p>From payload to orbit insertion — the phases every launch goes through.</p>
-        <div class="meta">Video · TBD</div>
-      </div>
-      <div class="card lesson">
-        <div class="top"><h4>The Space Age Index, Explained</h4><span class="pill idea">Idea</span></div>
-        <p>How to read this site's reliability index and what the numbers mean.</p>
-        <div class="meta">Guide · TBD</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="sec-head"><span class="idx">02</span> Build phases</div>
-    <div class="sec-sub">Phased rollout (from the project plan). Don't build a later phase until the one before proves out.</div>
-    <div class="grid g3">
-      <div class="card phase"><div class="num">1</div><div><h4>Free videos <span class="pill soon">Now</span></h4><p>Publish free lessons (YouTube unlisted or Mux). No login needed to watch.</p></div></div>
-      <div class="card phase"><div class="num">2</div><div><h4>Accounts + progress <span class="pill idea">Next</span></h4><p>Sign in, track which lessons you've finished. Built on the Supabase auth we're standing up now.</p></div></div>
-      <div class="card phase"><div class="num">3</div><div><h4>Paywall <span class="pill idea">Last</span></h4><p>Stripe for premium custom content — only after the free tier proves itself.</p></div></div>
     </div>
   </div>
 </div>
 
 <div id="site-footer"></div>
 
-<script>window.LL_GATE = { title:'LEARNING CENTER', tagline:"Lessons for the orbital era are taking shape. We'll open the doors soon." };</script>
+<script>
+/* ===== LEARNING CENTER (public, progress-tracking) ===== */
+var Learn = (function(){
+  var sb, user, host, msg, completed, current;
+  var libs=[], courses=[], videos=[];
+
+  function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
+  function ytThumb(id){ return 'https://img.youtube.com/vi/'+id+'/hqdefault.jpg'; }
+
+  async function init(client, u){
+    sb=client; user=u;
+    host=document.getElementById('learn'); msg=document.getElementById('lc-msg');
+    document.getElementById('player-close').onclick=closePlayer;
+    document.getElementById('player').onclick=function(e){ if(e.target===this) closePlayer(); };
+    document.getElementById('player-complete').onclick=function(){ if(current) toggleComplete(current); };
+    await load();
+  }
+
+  async function load(){
+    var r=await Promise.all([
+      sb.from('libraries').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
+      sb.from('courses').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
+      sb.from('videos').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true}),
+      sb.from('progress').select('video_id')
+    ]);
+    var err=r.find(function(x){return x.error;});
+    if(err){ msg.style.color='#ff5d5d'; msg.textContent='Could not load: '+err.error.message; return; }
+    libs=r[0].data||[]; courses=r[1].data||[]; videos=r[2].data||[];
+    completed=new Set((r[3].data||[]).map(function(p){return p.video_id;}));
+    msg.textContent=''; render();
+  }
+
+  function render(){
+    if(!libs.length){ host.innerHTML='<div class="empty">No lessons published yet. Add some in the Studio and they’ll appear here.</div>'; return; }
+    var byLib={}, byCourse={};
+    courses.forEach(function(c){ (byLib[c.library_id]=byLib[c.library_id]||[]).push(c); });
+    videos.forEach(function(v){ (byCourse[v.course_id]=byCourse[v.course_id]||[]).push(v); });
+
+    var h='';
+    libs.forEach(function(L){
+      var cs=byLib[L.id]||[];
+      h+='<div class="library"><h2>'+esc(L.title)+'</h2>'+(L.description?'<p>'+esc(L.description)+'</p>':'');
+      if(!cs.length) h+='<div class="empty" style="text-align:left">No courses in this library yet.</div>';
+      cs.forEach(function(c){
+        var vs=byCourse[c.id]||[];
+        var done=vs.filter(function(v){return completed.has(v.id);}).length;
+        var allDone=vs.length&&done===vs.length;
+        h+='<div class="course"><div class="course-head"><h3>'+esc(c.title)+'</h3>'
+          +'<span class="prog'+(allDone?' done':'')+'">'+done+' / '+vs.length+' watched</span></div>'
+          +(c.description?'<p>'+esc(c.description)+'</p>':'');
+        if(!vs.length) h+='<div class="empty" style="text-align:left;padding:10px 0">No videos yet.</div>';
+        else{
+          h+='<div class="vgrid">';
+          vs.forEach(function(v){
+            h+='<div class="vcard'+(completed.has(v.id)?' done':'')+'" data-vid="'+v.id+'">'
+              +'<div class="vthumb"><img src="'+ytThumb(v.youtube_id)+'" alt="" loading="lazy"><div class="play">▶</div></div>'
+              +'<div class="vmeta"><h4>'+esc(v.title)+'</h4></div></div>';
+          });
+          h+='</div>';
+        }
+        h+='</div>';
+      });
+      h+='</div>';
+    });
+    host.innerHTML=h;
+    host.querySelectorAll('.vcard').forEach(function(card){
+      card.onclick=function(){ openPlayer(card.dataset.vid); };
+    });
+  }
+
+  function videoById(id){ return videos.find(function(v){return v.id===id;}); }
+
+  function openPlayer(vid){
+    var v=videoById(vid); if(!v) return;
+    current=v;
+    document.getElementById('player-frame').src='https://www.youtube.com/embed/'+v.youtube_id+'?rel=0';
+    document.getElementById('player-title').textContent=v.title;
+    document.getElementById('player-desc').textContent=v.description||'';
+    updateCompleteBtn();
+    document.getElementById('player').classList.add('open');
+  }
+  function closePlayer(){
+    document.getElementById('player').classList.remove('open');
+    document.getElementById('player-frame').src=''; // stop playback
+    current=null;
+  }
+  function updateCompleteBtn(){
+    var btn=document.getElementById('player-complete');
+    var done=current&&completed.has(current.id);
+    btn.textContent=done?'✓ Watched':'Mark as watched';
+    btn.className='btn'+(done?' done':'');
+  }
+
+  async function toggleComplete(v){
+    var btn=document.getElementById('player-complete'); btn.disabled=true;
+    var isDone=completed.has(v.id), res;
+    if(isDone){ res=await sb.from('progress').delete().eq('user_id',user.id).eq('video_id',v.id); }
+    else { res=await sb.from('progress').upsert({user_id:user.id, video_id:v.id}); }
+    btn.disabled=false;
+    if(res.error){ btn.textContent='Error — try again'; return; }
+    if(isDone) completed.delete(v.id); else completed.add(v.id);
+    updateCompleteBtn(); render();
+  }
+
+  return { init:init };
+})();
+
+// ll-auth.js calls this for any logged-in user once the gate is passed.
+window.LL_ON_READY = function(sb, user){ Learn.init(sb, user); };
+</script>
+
+<script>window.LL_GATE = { title:'LEARNING CENTER', tagline:'Members preview — log in or create a free account to look around while we build it out.', require:'auth', allowSignup:true };</script>
 <script type="module" src="ll-auth.js"></script>
 
 <script>
@@ -198,39 +256,27 @@ footer a:hover{color:var(--amber)}
   function stars(){var c=document.getElementById('stars');if(!c)return;var h='';for(var i=0;i<90;i++){var s=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);h+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+s+'px;height:'+s+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=h;}
   stars();
 })();
-/* ===== SHARED HEADER + FOOTER (single source of truth) ===== */
 (function(){
   var page=(location.pathname.split('/').pop()||'index.html');
   var links=[
-    ['index.html','Home'],
-    ['index-reliability.html','The Index'],
-    ['schedule.html','Schedule'],
-    ['news.html','News'],
-    ['development.html','In Dev'],
-    ['games.html','Arcade'],
-    ['about.html','About']
+    ['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],
+    ['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['about.html','About']
   ];
   var navlinks=links.map(function(l){
-    var active=(l[0]===page||(page===''&&l[0]==='index.html'))?' class="active"':'';
+    var active=(l[0]===page)?' class="active"':'';
     return '<a href="'+l[0]+'"'+active+'>'+l[1]+'</a>';
   }).join('');
-  var header=''
-    +'<nav class="nav"><div class="nav-inner">'
+  var header='<nav class="nav"><div class="nav-inner">'
     +'<a class="brand" href="index.html"><span class="logo">🚀</span><span class="blink"></span> LIVE LAUNCHPAD</a>'
     +'<div class="nav-links">'+navlinks+'</div>'
     +'<button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">☾</button>'
     +'</div></nav>';
-  var footer=''
-    +'<footer><div class="wrap">'
+  var footer='<footer><div class="wrap">'
     +'<b>LIVE LAUNCHPAD</b> — mission control for the orbital era. Built with data from The Space Devs &amp; friends.<br>'
     +'An independent project · <a href="about.html">About</a> · <a href="index-reliability.html">The Index</a>'
     +'</div></footer>';
-
-  var mount=document.getElementById('site-header');
-  if(mount) mount.outerHTML=header;
-  var fmount=document.getElementById('site-footer');
-  if(fmount) fmount.outerHTML=footer;
-
+  var m=document.getElementById('site-header'); if(m) m.outerHTML=header;
+  var f=document.getElementById('site-footer'); if(f) f.outerHTML=footer;
   var t=document.documentElement.getAttribute('data-theme')||'dark';
   var b=document.querySelector('.theme-btn'); if(b) b.textContent=(t==='light'?'☀':'☾');
 })();
