@@ -80,6 +80,11 @@ footer a:hover{color:var(--amber)}
 /* ===== learning center ===== */
 .lc-head{padding:38px 0 4px}
 .lc-msg{font-family:var(--mono);font-size:13px;color:var(--txt3);min-height:18px;margin:18px 0}
+.cat-filter{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
+.cat-filter:empty{display:none}
+.catf{background:var(--bg2);border:1px solid var(--line2);color:var(--txt2);font-family:var(--mono);font-size:12px;padding:7px 14px;border-radius:8px;cursor:pointer;transition:all .15s}
+.catf:hover{color:var(--txt)}
+.catf.on{background:var(--amber);color:#1a1205;border-color:var(--amber);font-weight:700}
 /* continue watching */
 .resume{display:flex;gap:18px;align-items:center;border:1px solid rgba(255,182,39,.35);border-radius:16px;padding:16px;
   background:linear-gradient(100deg,rgba(255,182,39,.10),rgba(255,138,91,.05));margin:8px 0 8px}
@@ -154,6 +159,7 @@ footer a:hover{color:var(--amber)}
     Sign in and your progress is saved — pick up right where you left off.</p>
   </div>
   <div class="lc-msg" id="lc-msg">Loading lessons…</div>
+  <div class="cat-filter" id="cat-filter"></div>
   <div id="learn"></div>
 
   <div class="player" id="player">
@@ -187,6 +193,7 @@ var Learn = (function(){
   var sb, user, host, msg, completed, current;
   var libs=[], courses=[], videos=[], ordered=[], byLib={}, byCourse={}, courseOf={}, libOf={};
   var noteTimer=null, noteDirty=false, noteVideoId=null;
+  var cat='all';
 
   function $(s){return document.querySelector(s);}
   function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
@@ -215,7 +222,18 @@ var Learn = (function(){
     if(err){ msg.style.color='#ff5d5d'; msg.textContent='Could not load: '+err.error.message; return; }
     libs=r[0].data||[]; courses=r[1].data||[]; videos=r[2].data||[];
     completed=new Set((r[3].data||[]).map(function(p){return p.video_id;}));
-    index(); msg.textContent=''; render();
+    index(); msg.textContent=''; renderFilter(); render();
+  }
+
+  function renderFilter(){
+    var bar=document.getElementById('cat-filter'); if(!bar)return;
+    var cats=[]; courses.forEach(function(c){ if(c.category && cats.indexOf(c.category)<0) cats.push(c.category); });
+    if(!cats.length){ bar.innerHTML=''; cat='all'; return; }
+    cats.sort();
+    var btns='<button class="catf'+(cat==='all'?' on':'')+'" data-cat="all">All</button>';
+    cats.forEach(function(c){ btns+='<button class="catf'+(cat===c?' on':'')+'" data-cat="'+esc(c)+'">'+esc(c)+'</button>'; });
+    bar.innerHTML=btns;
+    bar.querySelectorAll('[data-cat]').forEach(function(b){ b.onclick=function(){ cat=b.dataset.cat; renderFilter(); render(); }; });
   }
 
   function index(){
@@ -257,8 +275,11 @@ var Learn = (function(){
       h+='<div class="allcaught">🎉 You’ve watched everything available. More lessons coming soon!</div>';
     }
 
+    var shown=0;
     libs.forEach(function(L){
-      var cs=byLib[L.id]||[];
+      var cs=(byLib[L.id]||[]).filter(function(c){ return cat==='all'||c.category===cat; });
+      if(cat!=='all' && !cs.length) return;
+      shown++;
       h+='<div class="library"><h2>'+esc(L.title)+'</h2>'+(L.description?'<p>'+esc(L.description)+'</p>':'');
       if(!cs.length) h+='<div class="empty" style="text-align:left">No courses in this library yet.</div>';
       cs.forEach(function(c){
@@ -282,6 +303,7 @@ var Learn = (function(){
       });
       h+='</div>';
     });
+    if(cat!=='all' && shown===0){ h+='<div class="empty">No lessons in “'+esc(cat)+'” yet.</div>'; }
     host.innerHTML=h;
     host.querySelectorAll('.vcard').forEach(function(card){ card.onclick=function(){ openPlayer(card.dataset.vid); }; });
     host.querySelectorAll('[data-resume]').forEach(function(b){ b.onclick=function(){ openPlayer(b.dataset.resume); }; });

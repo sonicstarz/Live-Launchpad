@@ -226,7 +226,7 @@ var Studio = (function(){
     var h='<div class="crumb"><a data-nav="lib">Libraries</a><span class="sep">/</span><span class="cur">'+esc(state.lib.title)+'</span></div>';
     h+='<div class="addbar"><button class="btn" id="add">+ New course</button></div>';
     if(!courses.length) h+='<div class="empty">No courses in this library yet.</div>';
-    courses.forEach(function(c,i){ h+=rowHTML(c,i,courses.length,{sub:counts[i]+' video'+(counts[i]===1?'':'s'),open:true}); });
+    courses.forEach(function(c,i){ h+=rowHTML(c,i,courses.length,{sub:(c.category?c.category+' · ':'')+counts[i]+' video'+(counts[i]===1?'':'s'),open:true}); });
     host.innerHTML=h;
     document.getElementById('add').onclick=function(){ openEditor('course',null); };
     wireRows('course',courses);
@@ -261,6 +261,7 @@ var Studio = (function(){
       +(isVid?'<div class="field"><label>YouTube link</label><input id="f-url" placeholder="https://youtube.com/watch?v=…" value="'+esc(ytUrl)+'"></div>'
               +'<div class="modal-thumb" id="f-thumbwrap" style="display:none"><img id="f-thumb" src="" alt=""><span class="t" id="f-vidtitle"></span></div>':'')
       +'<div class="field"><label>Title</label><input id="f-title" value="'+esc(item?item.title:'')+'"></div>'
+      +(level==='course'?'<div class="field"><label>Category <span style="text-transform:none;color:var(--txt3)">(powers the learn-page filter)</span></label><input id="f-cat" list="cat-suggest" placeholder="e.g. History" value="'+esc(item&&item.category?item.category:'')+'"><datalist id="cat-suggest"><option value="History"><option value="Science"><option value="Hardware"><option value="The Industry"><option value="Looking Forward"></datalist></div>':'')
       +'<div class="field"><label>Description <span style="text-transform:none;color:var(--txt3)">(optional)</span></label><textarea id="f-desc">'+esc(item?(item.description||''):'')+'</textarea></div>'
       +'<div class="modal-acts"><button class="btn ghost" id="f-cancel">Cancel</button><button class="btn" id="f-save">Save</button></div>';
     document.getElementById('modal').classList.add('open');
@@ -287,6 +288,7 @@ var Studio = (function(){
     var desc=document.getElementById('f-desc').value.trim();
     if(!title){ toast('Title is required',true); return; }
     var payload={ title:title, description:desc };
+    if(level==='course'){ var catEl=document.getElementById('f-cat'); payload.category=(catEl&&catEl.value.trim())||null; }
     if(level==='video'){
       var id=parseYouTube(document.getElementById('f-url').value);
       if(!id){ toast('Enter a valid YouTube link',true); return; }
