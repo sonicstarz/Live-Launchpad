@@ -344,6 +344,7 @@ const GAMES=[
   {art:'🚀',name:'FLAPPY STARSHIP',desc:'Tap / space to fire Raptors. Flap between the launch-tower chopsticks.',status:'ready',play:'flappy'},
   {art:'🛬',name:'BOOSTER LANDING',desc:'Burn to slow your descent. Touch down gently on the droneship.',status:'ready',play:'lander'},
   {art:'☄️',name:'ORBITAL DEBRIS',desc:'Pilot a capsule through a field of asteroids and dead satellites.',status:'ready',play:'orbital'},
+  {art:'👾',name:'STAR SWARM',desc:'Defend the launch site. Blast the alien swarm before they dive on you.',status:'ready',play:'swarm'},
   {art:'🧠',name:'LAUNCH TRIVIA',desc:'A daily quiz drawn from decades of space history. Build your streak.',status:'soon'},
   {art:'🛰',name:'ROCKETLE',desc:'Guess the rocket in six tries. A new mystery vehicle every day.',status:'soon'}
 ];
@@ -385,6 +386,7 @@ $('start').onclick=function(){
   else if(g.play==='flappy')openFlappy();
   else if(g.play==='lander')openLander();
   else if(g.play==='orbital')openOrbital();
+  else if(g.play==='swarm')openSwarm();
 };
 document.addEventListener('keydown',function(e){
   if($('stage').classList.contains('open'))return;
@@ -792,6 +794,140 @@ function startOrbital(){
   activeCleanup=cleanup;
   raf=requestAnimationFrame(update);
 }
+
+/* ============ STAR SWARM (Galaga-style) ============ */
+function openSwarm(){
+  openStage('STAR SWARM','◄ ► move · SPACE fire · mobile: drag to move (ship auto-fires)');
+  startSwarm();
+}
+function startSwarm(){
+  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  const PW=22,PH=16,PSPEED=4.2,BSPEED=7,EBSPEED=3.4,FIRE_CD=10;
+  const COLORS=['#2dd4bf','#a78bfa','#ff8a5b','#4d9fff','#f472b6'];
+  let px,py,lives,score,wave,dead,bullets,ebullets,enemies,stars,t,firing,moveDir,targetX,invuln,lastFire,clearAt;
+
+  function spawnWave(){
+    enemies=[];
+    const cols=7, rows=Math.min(2+wave,5), gx=44, sx=(W-(cols-1)*gx)/2;
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+      const hx=sx+c*gx, hy=34+r*26;
+      enemies.push({hx:hx,hy:hy,x:hx,y:hy,alive:true,state:'form',tier:r,t:0,vx:0,vy:0,cool:60+Math.random()*150});
+    }
+  }
+  function reset(){
+    px=W/2;py=H-26;lives=3;score=0;wave=1;dead=false;
+    bullets=[];ebullets=[];t=0;firing=false;moveDir=0;targetX=null;invuln=60;lastFire=-99;clearAt=0;
+    stars=[];for(let i=0;i<50;i++)stars.push({x:Math.random()*W,y:Math.random()*H,s:Math.random()*1.5+0.5});
+    spawnWave();
+  }
+  reset();
+
+  function diving(){ let n=0; enemies.forEach(function(e){if(e.alive&&e.state==='dive')n++;}); return n; }
+  function fire(){ if(t-lastFire>=FIRE_CD){ bullets.push({x:px,y:py-PH}); lastFire=t; } }
+
+  const kd=function(e){
+    if(e.key==='ArrowLeft'){e.preventDefault();moveDir=-1;}
+    else if(e.key==='ArrowRight'){e.preventDefault();moveDir=1;}
+    else if(e.key===' '||e.code==='Space'){e.preventDefault(); if(dead){cleanup();startSwarm();return;} firing=true;}
+  };
+  const ku=function(e){
+    if(e.key==='ArrowLeft'&&moveDir<0)moveDir=0;
+    if(e.key==='ArrowRight'&&moveDir>0)moveDir=0;
+    if(e.key===' '||e.code==='Space')firing=false;
+  };
+  document.addEventListener('keydown',kd);document.addEventListener('keyup',ku);
+  function ptrX(e){const rect=cv.getBoundingClientRect();const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;return cx*(W/rect.width);}
+  cv.onpointerdown=function(e){e.preventDefault(); if(dead){cleanup();startSwarm();return;} targetX=ptrX(e); firing=true;};
+  cv.onpointermove=function(e){ if(targetX!=null){e.preventDefault(); targetX=ptrX(e);} };
+  cv.onpointerup=function(){ firing=false; targetX=null; };
+  cv.onpointerleave=function(){ firing=false; targetX=null; };
+
+  function update(){
+    t++;
+    if(!dead){
+      if(targetX!=null){ const dx=targetX-px; px+=Math.max(-PSPEED*1.5,Math.min(PSPEED*1.5,dx*0.25)); }
+      else px+=moveDir*PSPEED;
+      px=Math.max(PW/2,Math.min(W-PW/2,px));
+      if(invuln>0)invuln--;
+      if(firing)fire();
+      bullets.forEach(function(b){b.y-=BSPEED;}); bullets=bullets.filter(function(b){return b.y>-12;});
+      ebullets.forEach(function(b){b.y+=EBSPEED;}); ebullets=ebullets.filter(function(b){return b.y<H+12;});
+
+      const sway=Math.sin(t*0.03)*16;
+      let aliveCount=0;
+      enemies.forEach(function(en){
+        if(!en.alive)return; aliveCount++;
+        if(en.state==='form'){
+          en.x=en.hx+sway; en.y=en.hy; en.cool--;
+          if(en.cool<=0 && diving()<2 && Math.random()<0.018){ en.state='dive'; en.t=0; en.vx=(px<en.x?-1:1)*1.1; en.vy=1.2; }
+        } else {
+          en.t++; en.vy=Math.min(en.vy+0.05,4.3);
+          en.x+=en.vx+Math.sin(en.t*0.12)*1.6 + (px-en.x)*0.012;
+          en.y+=en.vy;
+          if(Math.random()<0.02) ebullets.push({x:en.x,y:en.y+8});
+          if(en.y>H+16){ en.state='form'; en.vy=0; en.cool=120+Math.random()*150; }
+        }
+      });
+
+      bullets.forEach(function(b){
+        enemies.forEach(function(en){
+          if(en.alive && Math.abs(b.x-en.x)<13 && Math.abs(b.y-en.y)<12){ en.alive=false; b.y=-999; score+=(en.state==='dive'?150:80); }
+        });
+      });
+      bullets=bullets.filter(function(b){return b.y>-12;});
+
+      if(invuln<=0){
+        const hit=ebullets.some(function(b){return Math.abs(b.x-px)<PW/2 && Math.abs(b.y-py)<PH;});
+        const ram=enemies.some(function(en){return en.alive&&en.state==='dive'&&Math.abs(en.x-px)<PW/2+8&&Math.abs(en.y-py)<PH;});
+        if(hit||ram){ lives--; invuln=90; ebullets=[]; if(lives<=0){dead=true; LL_onGameOver('swarm',score);} }
+      }
+
+      if(aliveCount===0){ if(!clearAt)clearAt=t; if(t-clearAt>45){ wave++; spawnWave(); clearAt=0; invuln=Math.max(invuln,40); } }
+    }
+    draw();
+    if(!dead)raf=requestAnimationFrame(update); else drawOver();
+  }
+
+  function drawShip(){
+    if(invuln>0 && Math.floor(t/4)%2===0) return;
+    ctx.fillStyle='#ffb627';ctx.beginPath();ctx.moveTo(px,py-PH);ctx.lineTo(px-PW/2,py+PH/2);ctx.lineTo(px+PW/2,py+PH/2);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#ff8a5b';ctx.fillRect(px-3,py+PH/2,6,3+Math.random()*3);
+    ctx.fillStyle='#0a0f18';ctx.fillRect(px-2,py-4,4,8);
+  }
+  function drawEnemy(en){
+    const col=COLORS[en.tier%COLORS.length];
+    ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=6;ctx.fillRect(en.x-10,en.y-7,20,12);ctx.shadowBlur=0;
+    ctx.fillRect(en.x-13,en.y-2,4,6);ctx.fillRect(en.x+9,en.y-2,4,6);
+    ctx.fillStyle='#04060c';ctx.fillRect(en.x-6,en.y-3,3,3);ctx.fillRect(en.x+3,en.y-3,3,3);
+  }
+  function draw(){
+    ctx.fillStyle='#060d16';ctx.fillRect(0,0,W,H);
+    stars.forEach(function(s){s.y+=s.s*0.4; if(s.y>H){s.y=0;s.x=Math.random()*W;} ctx.fillStyle='rgba(255,255,255,'+(0.2+s.s*0.3)+')';ctx.fillRect(s.x,s.y,s.s,s.s);});
+    enemies.forEach(function(en){if(en.alive)drawEnemy(en);});
+    ctx.fillStyle='#ffe9b0';bullets.forEach(function(b){ctx.fillRect(b.x-1.5,b.y-7,3,9);});
+    ctx.fillStyle='#ff5d5d';ebullets.forEach(function(b){ctx.fillRect(b.x-1.5,b.y,3,8);});
+    if(!dead)drawShip();
+    ctx.font='10px "Press Start 2P",monospace';ctx.textAlign='left';ctx.fillStyle='#e9eef6';ctx.fillText('SCORE '+score,10,16);
+    ctx.textAlign='right';ctx.fillStyle='#ffb627';ctx.fillText('WAVE '+wave,W-10,16);
+    ctx.textAlign='left';for(let i=0;i<lives;i++){ctx.fillStyle='#3ddc84';const lx=12+i*16,ly=H-8;ctx.beginPath();ctx.moveTo(lx,ly-6);ctx.lineTo(lx-5,ly+3);ctx.lineTo(lx+5,ly+3);ctx.closePath();ctx.fill();}
+  }
+  function drawOver(){
+    ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ff5d5d';ctx.font='20px "Press Start 2P",monospace';ctx.textAlign='center';ctx.fillText('GAME OVER',W/2,H/2-10);
+    ctx.fillStyle='#ffb627';ctx.font='10px "Press Start 2P",monospace';ctx.fillText('SCORE '+score,W/2,H/2+20);
+    ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.fillText('SPACE / tap to retry',W/2,H/2+44);
+  }
+
+  let raf;
+  function cleanup(){
+    cancelAnimationFrame(raf);
+    document.removeEventListener('keydown',kd);document.removeEventListener('keyup',ku);
+    cv.onpointerdown=null;cv.onpointermove=null;cv.onpointerup=null;cv.onpointerleave=null;
+  }
+  activeCleanup=cleanup;
+  raf=requestAnimationFrame(update);
+}
 </script>
 <script>
 /* ===== ARCADE LEADERBOARD (Supabase backend) =====
@@ -813,7 +949,8 @@ function startOrbital(){
     {id:'snake',   name:'ROCKET SNAKE',    emoji:'🐍', unit:''},
     {id:'flappy',  name:'FLAPPY STARSHIP', emoji:'🚀', unit:''},
     {id:'lander',  name:'BOOSTER LANDING', emoji:'🛬', unit:'% fuel'},
-    {id:'orbital', name:'ORBITAL DEBRIS',  emoji:'☄️',  unit:''}
+    {id:'orbital', name:'ORBITAL DEBRIS',  emoji:'☄️',  unit:''},
+    {id:'swarm',   name:'STAR SWARM',      emoji:'👾', unit:''}
   ];
   var META={};BOARDS.forEach(function(b){META[b.id]=b;});
   function el(id){return document.getElementById(id);}
