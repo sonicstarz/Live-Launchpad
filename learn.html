@@ -59,7 +59,7 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding:30px 0 60px;font
 footer b{color:var(--txt2);font-weight:400}
 footer a{color:var(--txt2);text-decoration:none}
 footer a:hover{color:var(--amber)}
-.btn{display:inline-flex;align-items:center;gap:8px;background:var(--amber);color:#1a1205;font-family:var(--mono);font-weight:700;font-size:13px;padding:11px 20px;border-radius:9px;text-decoration:none;border:none;cursor:pointer;transition:transform .15s;text-transform:uppercase;letter-spacing:.05em}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--amber);color:#1a1205;font-family:var(--mono);font-weight:700;font-size:13px;padding:11px 20px;border-radius:9px;text-decoration:none;border:none;cursor:pointer;transition:transform .15s;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
 .btn:hover{transform:translateY(-2px)}
 .btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--txt2)}
 .btn.ghost:hover{color:var(--amber);border-color:var(--amber)}
@@ -70,15 +70,28 @@ footer a:hover{color:var(--amber)}
 /* ===== learning center ===== */
 .lc-head{padding:38px 0 4px}
 .lc-msg{font-family:var(--mono);font-size:13px;color:var(--txt3);min-height:18px;margin:18px 0}
-.library{margin:40px 0}
-.library > h2{font-size:24px;font-weight:900;letter-spacing:-.02em;margin-bottom:4px}
-.library > p{color:var(--txt2);font-size:14px;margin-bottom:8px;max-width:720px}
+/* continue watching */
+.resume{display:flex;gap:18px;align-items:center;border:1px solid rgba(255,182,39,.35);border-radius:16px;padding:16px;
+  background:linear-gradient(100deg,rgba(255,182,39,.10),rgba(255,138,91,.05));margin:8px 0 8px}
+.resume .rthumb{width:160px;aspect-ratio:16/9;border-radius:10px;object-fit:cover;flex:none;background:#0a0f18;border:1px solid var(--line)}
+.resume .rinfo{flex:1;min-width:0}
+.resume .rlabel{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+.resume .rinfo h3{font-size:18px;font-weight:800;letter-spacing:-.01em;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.resume .rinfo .rwhere{font-family:var(--mono);font-size:12px;color:var(--txt3);margin-top:3px;overflow-wrap:anywhere}
+.resume .rbtn{flex:none}
+.allcaught{border:1px solid rgba(61,220,132,.3);background:rgba(61,220,132,.07);border-radius:14px;padding:16px 18px;
+  font-family:var(--mono);font-size:13px;color:var(--green);margin:8px 0}
+@media(max-width:620px){.resume{flex-wrap:wrap}.resume .rthumb{width:100%}.resume .rbtn{width:100%;justify-content:center}}
+
+.library{margin:38px 0}
+.library > h2{font-size:24px;font-weight:900;letter-spacing:-.02em;margin-bottom:4px;overflow-wrap:anywhere}
+.library > p{color:var(--txt2);font-size:14px;margin-bottom:8px;max-width:720px;overflow-wrap:anywhere}
 .course{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:16px}
 .course-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:4px}
-.course-head h3{font-size:17px;font-weight:700}
-.course-head .prog{font-family:var(--mono);font-size:12px;color:var(--txt3);white-space:nowrap}
+.course-head h3{font-size:17px;font-weight:700;overflow-wrap:anywhere;min-width:0}
+.course-head .prog{font-family:var(--mono);font-size:12px;color:var(--txt3);white-space:nowrap;flex:none}
 .course-head .prog.done{color:var(--green)}
-.course > p{color:var(--txt2);font-size:13px;margin-bottom:14px}
+.course > p{color:var(--txt2);font-size:13px;margin-bottom:14px;overflow-wrap:anywhere}
 .vgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .vcard{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .2s;position:relative}
 .vcard:hover{border-color:var(--line2);transform:translateY(-2px)}
@@ -87,19 +100,36 @@ footer a:hover{color:var(--amber)}
 .vthumb .play{position:absolute;inset:0;display:grid;place-items:center;font-size:30px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6);opacity:.9}
 .vcard.done .vthumb::after{content:"✓ Watched";position:absolute;top:8px;left:8px;background:rgba(61,220,132,.9);color:#04130a;font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 7px;border-radius:5px}
 .vmeta{padding:11px 13px}
-.vmeta h4{font-size:14px;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vmeta h4{font-size:14px;font-weight:600;line-height:1.35;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .empty{color:var(--txt3);font-family:var(--mono);font-size:14px;padding:30px 0;text-align:center}
-/* player modal */
+
+/* ===== player modal (video + notes) ===== */
 .player{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;padding:20px}
 .player.open{display:flex}
-.player-box{background:var(--panel);border:1px solid var(--line2);border-radius:16px;max-width:860px;width:100%;overflow:hidden}
-.player-frame{position:relative;aspect-ratio:16/9;background:#000}
+.player-box{background:var(--panel);border:1px solid var(--line2);border-radius:16px;max-width:1180px;width:100%;max-height:92vh;overflow:hidden;display:flex;flex-direction:column}
+.player-main{display:flex;align-items:stretch;min-height:0}
+.player-left{flex:1.7;min-width:0;display:flex;flex-direction:column}
+.player-frame{position:relative;aspect-ratio:16/9;background:#000;flex:none}
 .player-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.player-meta{padding:18px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
-.player-meta h3{font-size:17px;font-weight:700;margin-bottom:4px}
-.player-meta p{color:var(--txt2);font-size:13px;max-width:560px}
-.player-close{position:absolute;top:14px;right:16px;z-index:2;background:rgba(0,0,0,.5);border:1px solid var(--line2);color:#fff;width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px}
+.player-close{position:absolute;top:14px;right:16px;z-index:2;background:rgba(0,0,0,.55);border:1px solid var(--line2);color:#fff;width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px}
+.player-meta{padding:16px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;min-width:0;flex-wrap:wrap}
+.player-meta .pm-text{min-width:0;flex:1}
+.player-meta h3{font-size:17px;font-weight:700;margin-bottom:4px;overflow-wrap:anywhere}
+.player-meta p{color:var(--txt2);font-size:13px;overflow-wrap:anywhere}
 .btn.done{background:var(--green);color:#04130a}
+.player-notes{flex:1;min-width:300px;max-width:360px;border-left:1px solid var(--line);background:var(--panel2);display:flex;flex-direction:column;padding:16px}
+.notes-head{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12px;color:var(--txt2);margin-bottom:10px}
+.notes-status{font-size:11px;color:var(--txt3)}
+.notes-status.saved{color:var(--green)}
+#note-body{flex:1;min-height:200px;resize:none;background:#0a0f18;border:1px solid var(--line2);border-radius:10px;color:var(--txt);font-family:var(--sans);font-size:14px;line-height:1.6;padding:12px 14px;outline:none}
+#note-body:focus{border-color:var(--amber)}
+.notes-hint{font-family:var(--mono);font-size:10px;color:var(--txt3);margin-top:8px}
+@media(max-width:880px){
+  .player-main{flex-direction:column}
+  .player-box{overflow-y:auto}
+  .player-notes{border-left:none;border-top:1px solid var(--line);max-width:none}
+  #note-body{min-height:140px}
+}
 </style>
 </head>
 <body>
@@ -118,13 +148,22 @@ footer a:hover{color:var(--amber)}
 
   <div class="player" id="player">
     <div class="player-box">
-      <div class="player-frame">
-        <button class="player-close" id="player-close" aria-label="Close">✕</button>
-        <iframe id="player-frame" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-      </div>
-      <div class="player-meta">
-        <div><h3 id="player-title"></h3><p id="player-desc"></p></div>
-        <button class="btn" id="player-complete"></button>
+      <div class="player-main">
+        <div class="player-left">
+          <div class="player-frame">
+            <button class="player-close" id="player-close" aria-label="Close">✕</button>
+            <iframe id="player-iframe" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+          </div>
+          <div class="player-meta">
+            <div class="pm-text"><h3 id="player-title"></h3><p id="player-desc"></p></div>
+            <button class="btn" id="player-complete"></button>
+          </div>
+        </div>
+        <div class="player-notes">
+          <div class="notes-head"><span>📝 My notes</span><span class="notes-status" id="note-status"></span></div>
+          <textarea id="note-body" placeholder="Jot down anything you want to remember from this video…"></textarea>
+          <div class="notes-hint">Saved to your account · only you can see these</div>
+        </div>
       </div>
     </div>
   </div>
@@ -133,13 +172,16 @@ footer a:hover{color:var(--amber)}
 <div id="site-footer"></div>
 
 <script>
-/* ===== LEARNING CENTER (public, progress-tracking) ===== */
+/* ===== LEARNING CENTER (public, progress + notes + continue watching) ===== */
 var Learn = (function(){
   var sb, user, host, msg, completed, current;
-  var libs=[], courses=[], videos=[];
+  var libs=[], courses=[], videos=[], ordered=[], byLib={}, byCourse={}, courseOf={}, libOf={};
+  var noteTimer=null, noteDirty=false, noteVideoId=null;
 
+  function $(s){return document.querySelector(s);}
   function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
   function ytThumb(id){ return 'https://img.youtube.com/vi/'+id+'/hqdefault.jpg'; }
+  function lastKey(){ return 'll_last_'+(user&&user.id); }
 
   async function init(client, u){
     sb=client; user=u;
@@ -147,6 +189,8 @@ var Learn = (function(){
     document.getElementById('player-close').onclick=closePlayer;
     document.getElementById('player').onclick=function(e){ if(e.target===this) closePlayer(); };
     document.getElementById('player-complete').onclick=function(){ if(current) toggleComplete(current); };
+    document.getElementById('note-body').oninput=onNoteInput;
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.getElementById('player').classList.contains('open')) closePlayer(); });
     await load();
   }
 
@@ -161,16 +205,48 @@ var Learn = (function(){
     if(err){ msg.style.color='#ff5d5d'; msg.textContent='Could not load: '+err.error.message; return; }
     libs=r[0].data||[]; courses=r[1].data||[]; videos=r[2].data||[];
     completed=new Set((r[3].data||[]).map(function(p){return p.video_id;}));
-    msg.textContent=''; render();
+    index(); msg.textContent=''; render();
+  }
+
+  function index(){
+    byLib={}; byCourse={}; courseOf={}; libOf={}; ordered=[];
+    var libById={}; libs.forEach(function(L){libById[L.id]=L;});
+    courses.forEach(function(c){ (byLib[c.library_id]=byLib[c.library_id]||[]).push(c); });
+    videos.forEach(function(v){ (byCourse[v.course_id]=byCourse[v.course_id]||[]).push(v); });
+    libs.forEach(function(L){ (byLib[L.id]||[]).forEach(function(c){
+      courseOf[c.id]=c; libOf[c.id]=L;
+      (byCourse[c.id]||[]).forEach(function(v){ ordered.push(v); });
+    }); });
+  }
+
+  function resumePick(){
+    if(!ordered.length) return null;
+    var lastId=null; try{ lastId=localStorage.getItem(lastKey()); }catch(e){}
+    if(lastId){ var lv=ordered.find(function(v){return v.id===lastId;}); if(lv && !completed.has(lv.id)) return {video:lv,label:'Continue watching'}; }
+    var nx=ordered.find(function(v){return !completed.has(v.id);});
+    if(nx) return {video:nx,label:'Up next'};
+    return null; // all complete
+  }
+
+  function whereLabel(v){
+    var c=courseOf[v.course_id], L=c&&libOf[c.id];
+    return (L?L.title:'')+(c?' · '+c.title:'');
   }
 
   function render(){
     if(!libs.length){ host.innerHTML='<div class="empty">No lessons published yet. Add some in the Studio and they’ll appear here.</div>'; return; }
-    var byLib={}, byCourse={};
-    courses.forEach(function(c){ (byLib[c.library_id]=byLib[c.library_id]||[]).push(c); });
-    videos.forEach(function(v){ (byCourse[v.course_id]=byCourse[v.course_id]||[]).push(v); });
-
     var h='';
+    var pick=resumePick();
+    if(pick){
+      var v=pick.video;
+      h+='<div class="resume"><img class="rthumb" src="'+ytThumb(v.youtube_id)+'" alt="">'
+        +'<div class="rinfo"><div class="rlabel">▶ '+pick.label+'</div><h3>'+esc(v.title)+'</h3>'
+        +'<div class="rwhere">'+esc(whereLabel(v))+'</div></div>'
+        +'<button class="btn rbtn" data-resume="'+v.id+'">Resume</button></div>';
+    } else if(ordered.length){
+      h+='<div class="allcaught">🎉 You’ve watched everything available. More lessons coming soon!</div>';
+    }
+
     libs.forEach(function(L){
       var cs=byLib[L.id]||[];
       h+='<div class="library"><h2>'+esc(L.title)+'</h2>'+(L.description?'<p>'+esc(L.description)+'</p>':'');
@@ -197,9 +273,8 @@ var Learn = (function(){
       h+='</div>';
     });
     host.innerHTML=h;
-    host.querySelectorAll('.vcard').forEach(function(card){
-      card.onclick=function(){ openPlayer(card.dataset.vid); };
-    });
+    host.querySelectorAll('.vcard').forEach(function(card){ card.onclick=function(){ openPlayer(card.dataset.vid); }; });
+    host.querySelectorAll('[data-resume]').forEach(function(b){ b.onclick=function(){ openPlayer(b.dataset.resume); }; });
   }
 
   function videoById(id){ return videos.find(function(v){return v.id===id;}); }
@@ -207,16 +282,20 @@ var Learn = (function(){
   function openPlayer(vid){
     var v=videoById(vid); if(!v) return;
     current=v;
-    document.getElementById('player-frame').src='https://www.youtube.com/embed/'+v.youtube_id+'?rel=0';
+    try{ localStorage.setItem(lastKey(), v.id); }catch(e){}
+    document.getElementById('player-iframe').src='https://www.youtube.com/embed/'+v.youtube_id+'?rel=0';
     document.getElementById('player-title').textContent=v.title;
     document.getElementById('player-desc').textContent=v.description||'';
     updateCompleteBtn();
+    loadNote(v.id);
     document.getElementById('player').classList.add('open');
   }
   function closePlayer(){
+    flushNote();
     document.getElementById('player').classList.remove('open');
-    document.getElementById('player-frame').src=''; // stop playback
+    document.getElementById('player-iframe').src='';
     current=null;
+    render(); // refresh continue-watching to reflect what was just opened/watched
   }
   function updateCompleteBtn(){
     var btn=document.getElementById('player-complete');
@@ -235,6 +314,27 @@ var Learn = (function(){
     if(isDone) completed.delete(v.id); else completed.add(v.id);
     updateCompleteBtn(); render();
   }
+
+  /* ----- notes ----- */
+  function setNoteStatus(t,saved){ var s=document.getElementById('note-status'); s.textContent=t||''; s.className='notes-status'+(saved?' saved':''); }
+  async function loadNote(vid){
+    noteVideoId=vid; noteDirty=false;
+    var ta=document.getElementById('note-body'); ta.value=''; setNoteStatus('');
+    var r=await sb.from('notes').select('body').eq('user_id',user.id).eq('video_id',vid).maybeSingle();
+    if(noteVideoId!==vid) return; // user switched videos before this resolved
+    if(r.error){ setNoteStatus('Notes unavailable'); return; }
+    if(r.data) ta.value=r.data.body||'';
+  }
+  function onNoteInput(){ noteDirty=true; setNoteStatus('Saving…'); clearTimeout(noteTimer); noteTimer=setTimeout(saveNote,700); }
+  async function saveNote(){
+    if(!noteVideoId) return;
+    var vid=noteVideoId, body=document.getElementById('note-body').value;
+    clearTimeout(noteTimer);
+    var r=await sb.from('notes').upsert({user_id:user.id, video_id:vid, body:body, updated_at:new Date().toISOString()});
+    if(r.error){ setNoteStatus('Save failed'); return; }
+    noteDirty=false; setNoteStatus('Saved',true);
+  }
+  function flushNote(){ if(noteDirty) saveNote(); }
 
   return { init:init };
 })();
