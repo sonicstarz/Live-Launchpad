@@ -103,7 +103,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   window.__toggleTheme=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
   setTheme('dark');
   var page=(location.pathname.split('/').pop()||'index.html');
-  var links=[['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['about.html','About']];
+  var links=[['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['learn.html','Learn'],['about.html','About']];
   var nl=links.map(function(l){var a=(l[0]===page)?' class="active"':'';return '<a href="'+l[0]+'"'+a+'>'+l[1]+'</a>';}).join('');
   var h=document.getElementById('site-header');
   if(h)h.outerHTML='<nav class="nav"><div class="nav-inner"><a class="brand" href="index.html">\uD83D\uDE80 <span class="blink"></span> LIVE LAUNCHPAD</a><div class="nav-links">'+nl+'</div><button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">\u263E</button></div></nav>';
