@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Launchpad — Mission Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chivo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ===== SPACE AGE — shared site styles ===== */
+:root{
+  --bg:#070a10; --bg2:#0d121c; --panel:#111827; --panel2:#161f30;
+  --line:#1e2738; --line2:#2a3650;
+  --txt:#e9eef6; --txt2:#8b9bb4; --txt3:#586780;
+  --amber:#ffb627; --green:#3ddc84; --teal:#2dd4bf; --blue:#4d9fff;
+  --purple:#a78bfa; --red:#ff5d5d; --coral:#ff8a5b; --pink:#f472b6;
+  --mono:'Space Mono',monospace; --sans:'Chivo',sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f4f6fb; --bg2:#ffffff; --panel:#ffffff; --panel2:#f0f3f9;
+  --line:#dce3ef; --line2:#c4cfe0;
+  --txt:#0f1726; --txt2:#48566e; --txt3:#7a89a3;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--txt); font-family:var(--sans); font-weight:300;
+  line-height:1.6; overflow-x:hidden; min-height:100vh;
+  background-image:
+    radial-gradient(circle at 12% 6%, rgba(77,159,255,0.07), transparent 35%),
+    radial-gradient(circle at 88% 22%, rgba(255,182,39,0.05), transparent 42%),
+    radial-gradient(circle at 50% 92%, rgba(45,212,191,0.04), transparent 45%);
+  background-attachment:fixed;
+  transition:background-color .3s,color .3s;
+}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+:root[data-theme="light"] #stars{opacity:.12}
+.star{position:absolute;background:var(--txt);border-radius:50%;animation:tw ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.12}50%{opacity:.85}}
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 24px}
+
+/* ===== NAV ===== */
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt);font-weight:700;font-size:16px;letter-spacing:-.01em;white-space:nowrap}
+.brand .logo{width:26px;height:26px;display:grid;place-items:center;font-size:16px}
+.brand .blink{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.nav-links{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+.nav-links a{color:var(--txt2);text-decoration:none;font-size:13px;font-family:var(--mono);
+  padding:7px 12px;border-radius:7px;transition:all .15s;letter-spacing:.02em}
+.nav-links a:hover{color:var(--txt);background:var(--panel2)}
+.nav-links a.active{color:var(--amber);background:rgba(255,182,39,.1)}
+.theme-btn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);
+  width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;display:grid;place-items:center;transition:all .15s}
+.theme-btn:hover{color:var(--amber);border-color:var(--amber)}
+
+/* ===== shared bits ===== */
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.eyebrow::before{content:"";width:32px;height:1px;background:var(--amber)}
+h1{font-weight:900;font-size:clamp(34px,6vw,64px);line-height:.98;letter-spacing:-.025em}
+.gt{background:linear-gradient(100deg,var(--amber),var(--coral) 45%,var(--pink));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:var(--txt2);font-size:clamp(15px,2vw,20px);line-height:1.5;max-width:760px;margin-top:18px;font-weight:300}
+.section{margin:48px 0}
+.sec-head{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--txt);font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.sec-head .idx{color:var(--amber)}
+.sec-sub{color:var(--txt2);font-size:14px;margin-bottom:22px;max-width:680px}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;transition:border-color .2s,transform .2s}
+a.card{text-decoration:none;color:inherit;display:block}
+a.card:hover{border-color:var(--line2);transform:translateY(-2px)}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+
+.pill{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;padding:3px 9px;border-radius:6px;font-weight:700}
+.pill.live{background:rgba(61,220,132,.14);color:var(--green)}
+.pill.soon{background:rgba(255,182,39,.14);color:var(--amber)}
+.pill.idea{background:rgba(167,139,250,.14);color:var(--purple)}
+
+footer{border-top:1px solid var(--line);margin-top:60px;padding:30px 0 60px;font-size:12px;color:var(--txt3);font-weight:300}
+footer b{color:var(--txt2);font-weight:400}
+footer a{color:var(--txt2);text-decoration:none}
+footer a:hover{color:var(--amber)}
+
+.filler-note{background:rgba(255,182,39,.07);border:1px solid rgba(255,182,39,.2);
+  border-radius:10px;padding:14px 18px;font-size:13px;color:var(--txt2);margin-top:24px;font-family:var(--mono)}
+.filler-note b{color:var(--amber);font-weight:700}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--amber);color:#1a1205;
+  font-family:var(--mono);font-weight:700;font-size:13px;padding:11px 20px;border-radius:9px;
+  text-decoration:none;border:none;cursor:pointer;transition:transform .15s;text-transform:uppercase;letter-spacing:.05em}
+.btn:hover{transform:translateY(-2px)}
+.btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--txt2)}
+.btn.ghost:hover{color:var(--amber);border-color:var(--amber)}
+::-webkit-scrollbar{height:10px;width:10px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+
+</style>
+<style>
+  .hero{padding:60px 0 20px}
+  .hero h1{opacity:0;animation:fu .7s .15s forwards}
+  .hero .eyebrow{opacity:0;animation:fu .7s .05s forwards}
+  .hero .sub{opacity:0;animation:fu .7s .3s forwards}
+  @keyframes fu{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+  .cta-row{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap;opacity:0;animation:fu .7s .45s forwards}
+  .countdown{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px;margin-top:18px;position:relative;overflow:hidden}
+  .countdown::after{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:var(--green);opacity:.7}
+  .cd-label{font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px}
+  .cd-mission{font-size:22px;font-weight:700;margin-bottom:4px}
+  .cd-meta{font-size:13px;color:var(--txt2);margin-bottom:18px}
+  .cd-clock{display:flex;gap:18px;flex-wrap:wrap}
+  .cd-unit{text-align:center}
+  .cd-num{font-family:var(--mono);font-size:38px;font-weight:700;line-height:1;color:var(--amber);font-variant-numeric:tabular-nums}
+  .cd-u{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-top:6px}
+  .tile-ico{font-size:24px;margin-bottom:12px;display:block}
+  .tile h3{font-size:17px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .tile p{font-size:13px;color:var(--txt2);line-height:1.5}
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px;margin-top:18px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;position:relative;overflow:hidden}
+  .kpi::after{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:var(--accent);opacity:.8}
+  .kpi .l{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--txt3);margin-bottom:8px}
+  .kpi .v{font-size:28px;font-weight:700;line-height:1}
+  @media(max-width:560px){
+    .nav-inner{gap:10px}
+    .cd-num{font-size:30px}
+    .cd-unit{min-width:48px}
+    .cta-row{gap:8px}
+    .cta-row .btn{font-size:12px;padding:10px 14px}
+    .countdown{padding:18px}
+  }
+</style>
+</head>
+<body>
+<div id="stars"></div>
+
+<div id="site-header"></div>
+
+<div class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Orbital Intelligence · Est. 2026</div>
+    <h1>Welcome to <span class="gt">Live Launchpad</span></h1>
+    <p class="sub">Your mission control for spaceflight — live launch schedules, decades of reliability data, news as it breaks, and a rocket-fueled arcade. The whole orbital era, one dashboard.</p>
+    <div class="cta-row">
+      <a class="btn" href="schedule.html">▶ Next launch</a>
+      <a class="btn ghost" href="index-reliability.html">Explore the Index</a>
+      <a class="btn ghost" href="games.html">🕹 Play games</a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="countdown">
+      <div class="cd-label">◉ Next launch — T-minus</div>
+      <div class="cd-mission" id="cd-mission">Loading next launch…</div>
+      <div class="cd-meta" id="cd-meta">Fetching live schedule…</div>
+      <div class="cd-clock" id="cd-clock">
+        <div class="cd-unit"><div class="cd-num" id="cd-d">--</div><div class="cd-u">days</div></div>
+        <div class="cd-unit"><div class="cd-num" id="cd-h">--</div><div class="cd-u">hours</div></div>
+        <div class="cd-unit"><div class="cd-num" id="cd-m">--</div><div class="cd-u">min</div></div>
+        <div class="cd-unit"><div class="cd-num" id="cd-s">--</div><div class="cd-u">sec</div></div>
+      </div>
+      <div class="filler-note"><b>Live countdown.</b> Pulling the next launch from the Launch Library 2 feed. Showing a recent snapshot if the live feed is unavailable.</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sec-head"><span class="idx">01</span> Explore</div>
+    <div class="sec-sub">Every section of the dashboard. Pick a destination.</div>
+    <div class="grid g3">
+      <a class="card tile" href="index-reliability.html">
+        <span class="tile-ico">📊</span>
+        <h3>The Index <span class="pill live">live</span></h3>
+        <p>Reliability scores for every launch provider since 2000 — plus the full Space Age arc from Sputnik to today.</p>
+      </a>
+      <a class="card tile" href="schedule.html">
+        <span class="tile-ico">🗓</span>
+        <h3>Launch Schedule <span class="pill soon">soon</span></h3>
+        <p>Live upcoming launches with countdown timers, provider status, and links to every livestream.</p>
+      </a>
+      <a class="card tile" href="news.html">
+        <span class="tile-ico">📰</span>
+        <h3>News <span class="pill soon">soon</span></h3>
+        <p>The latest spaceflight headlines, auto-pulled and filterable by agency and topic.</p>
+      </a>
+      <a class="card tile" href="development.html">
+        <span class="tile-ico">🛠</span>
+        <h3>In Development <span class="pill soon">soon</span></h3>
+        <p>What's being built right now — Starship, Artemis, New Glenn, Neutron and more, with milestone tracking.</p>
+      </a>
+      <a class="card tile" href="games.html">
+        <span class="tile-ico">🕹</span>
+        <h3>The Arcade <span class="pill soon">soon</span></h3>
+        <p>A vintage cabinet of rocket-themed games. Rocket Snake, Flappy Starship, Booster Landing and more.</p>
+      </a>
+      <a class="card tile" href="about.html">
+        <span class="tile-ico">📡</span>
+        <h3>About + Email <span class="pill soon">soon</span></h3>
+        <p>What this is, who's building it, and a signup to get launch alerts in your inbox.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sec-head"><span class="idx">02</span> At a glance</div>
+    <div class="sec-sub">Snapshot of the modern launch era (placeholder figures).</div>
+    <div class="kpi-row">
+      <div class="kpi" style="--accent:var(--amber)"><div class="l">Launches in 2025</div><div class="v">320</div></div>
+      <div class="kpi" style="--accent:var(--green)"><div class="l">Global success rate</div><div class="v">95.8%</div></div>
+      <div class="kpi" style="--accent:var(--blue)"><div class="l">Active providers</div><div class="v">42</div></div>
+      <div class="kpi" style="--accent:var(--coral)"><div class="l">SpaceX share</div><div class="v">38%</div></div>
+    </div>
+  </section>
+</div>
+
+<div id="site-footer"></div>
+
+
+<script>
+  // Live next-launch countdown (with fallback). Tries the schedule function, then SNAPI-independent fallback.
+  var FALLBACK_NEXT={name:"Falcon 9 Block 5 · Starlink Group 17-44",meta:"SpaceX · SLC-4E, Vandenberg · status: GO",net:"2026-06-10T14:00:00Z"};
+  var target=new Date(FALLBACK_NEXT.net);
+  function setMission(name,meta){
+    var mEl=document.getElementById('cd-mission'),meEl=document.getElementById('cd-meta');
+    if(mEl)mEl.textContent=name;if(meEl)meEl.textContent=meta;
+  }
+  setMission(FALLBACK_NEXT.name,FALLBACK_NEXT.meta);
+  function tick(){
+    var diff=Math.max(0,target-new Date());
+    var d=Math.floor(diff/86400000),h=Math.floor(diff/3600000)%24,m=Math.floor(diff/60000)%60,s=Math.floor(diff/1000)%60;
+    var p=function(n){return String(n).padStart(2,'0');};
+    document.getElementById('cd-d').textContent=p(d);
+    document.getElementById('cd-h').textContent=p(h);
+    document.getElementById('cd-m').textContent=p(m);
+    document.getElementById('cd-s').textContent=p(s);
+  }
+  tick();setInterval(tick,1000);
+  // try to upgrade to live data
+  (async function(){
+    try{
+      var r=await fetch('/.netlify/functions/launches?kind=upcoming&limit=8');
+      if(!r.ok)return;
+      var data=await r.json();
+      var up=(data.results||[]).filter(function(l){return new Date(l.net)>new Date();}).sort(function(a,b){return new Date(a.net)-new Date(b.net);});
+      if(up.length){
+        var n=up[0];
+        target=new Date(n.net);
+        setMission(n.name||n.mission,[n.provider,n.pad,n.location].filter(Boolean).join(' · ')+' · '+(n.status||'TBD'));
+        var note=document.querySelector('.countdown .filler-note');
+        if(note)note.style.display='none';
+      }
+    }catch(e){/* keep fallback */}
+  })();
+</script>
+<script>
+/* ===== SPACE AGE — base ===== */
+(function(){
+  var root=document.documentElement;
+  function setTheme(t){root.setAttribute('data-theme',t);var b=document.querySelector('.theme-btn');if(b)b.textContent=t==='light'?'\u2600':'\u263E';}
+  window.__toggleTheme=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
+  setTheme('dark');
+  function stars(){var c=document.getElementById('stars');if(!c)return;var h='';for(var i=0;i<90;i++){var s=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);h+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+s+'px;height:'+s+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=h;}
+  stars();
+})();
+/* ===== SHARED HEADER + FOOTER (single source of truth) ===== */
+(function(){
+  var page=(location.pathname.split('/').pop()||'index.html');
+  var links=[
+    ['index.html','Home'],
+    ['index-reliability.html','The Index'],
+    ['schedule.html','Schedule'],
+    ['news.html','News'],
+    ['development.html','In Dev'],
+    ['games.html','Arcade'],
+    ['about.html','About']
+  ];
+  var navlinks=links.map(function(l){
+    var active=(l[0]===page||(page===''&&l[0]==='index.html'))?' class="active"':'';
+    return '<a href="'+l[0]+'"'+active+'>'+l[1]+'</a>';
+  }).join('');
+  var header=''
+    +'<nav class="nav"><div class="nav-inner">'
+    +'<a class="brand" href="index.html"><span class="logo">\uD83D\uDE80</span><span class="blink"></span> LIVE LAUNCHPAD</a>'
+    +'<div class="nav-links">'+navlinks+'</div>'
+    +'<button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">\u263E</button>'
+    +'</div></nav>';
+  var footer=''
+    +'<footer><div class="wrap">'
+    +'<b>LIVE LAUNCHPAD</b> \u2014 mission control for the orbital era. Built with data from The Space Devs &amp; friends.<br>'
+    +'An independent project \u00B7 <a href="about.html">About</a> \u00B7 <a href="index-reliability.html">The Index</a>'
+    +'</div></footer>';
+
+  var mount=document.getElementById('site-header');
+  if(mount) mount.outerHTML=header; 
+  var fmount=document.getElementById('site-footer');
+  if(fmount) fmount.outerHTML=footer;
+
+  // re-apply theme button glyph after injection
+  var t=document.documentElement.getAttribute('data-theme')||'dark';
+  var b=document.querySelector('.theme-btn'); if(b) b.textContent=(t==='light'?'\u2600':'\u263E');
+})();
+</script>
+</body>
+</html>

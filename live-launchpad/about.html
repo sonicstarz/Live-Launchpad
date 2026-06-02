@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Launchpad — About</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chivo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070a10;--bg2:#0d121c;--panel:#111827;--panel2:#161f30;--line:#1e2738;--line2:#2a3650;--txt:#e9eef6;--txt2:#8b9bb4;--txt3:#586780;--amber:#ffb627;--green:#3ddc84;--teal:#2dd4bf;--blue:#4d9fff;--purple:#a78bfa;--red:#ff5d5d;--coral:#ff8a5b;--pink:#f472b6;--mono:'Space Mono',monospace;--sans:'Chivo',sans-serif}
+:root[data-theme="light"]{--bg:#f4f6fb;--bg2:#fff;--panel:#fff;--panel2:#f0f3f9;--line:#dce3ef;--line2:#c4cfe0;--txt:#0f1726;--txt2:#48566e;--txt3:#7a89a3}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-weight:300;line-height:1.6;overflow-x:hidden;min-height:100vh;background-image:radial-gradient(circle at 12% 6%,rgba(77,159,255,.07),transparent 35%),radial-gradient(circle at 88% 22%,rgba(255,182,39,.05),transparent 42%);background-attachment:fixed;transition:background-color .3s,color .3s}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+:root[data-theme="light"] #stars{opacity:.12}
+.star{position:absolute;background:var(--txt);border-radius:50%;animation:tw ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.12}50%{opacity:.85}}
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 20px}
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:18px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt);font-weight:700;font-size:16px;white-space:nowrap;font-family:var(--sans)}
+.brand .blink{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.nav-links{display:flex;gap:2px;flex:1;flex-wrap:wrap}
+.nav-links a{color:var(--txt2);text-decoration:none;font-size:13px;font-family:var(--mono);padding:7px 11px;border-radius:7px;transition:all .15s}
+.nav-links a:hover{color:var(--txt);background:var(--panel2)}
+.nav-links a.active{color:var(--amber);background:rgba(255,182,39,.1)}
+.theme-btn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0}
+.theme-btn:hover{color:var(--amber);border-color:var(--amber)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.eyebrow::before{content:"";width:32px;height:1px;background:var(--amber)}
+h1{font-weight:900;font-size:clamp(32px,6vw,56px);line-height:1;letter-spacing:-.025em}
+.gt{background:linear-gradient(100deg,var(--amber),var(--coral) 45%,var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:var(--txt2);font-size:clamp(14px,2vw,18px);line-height:1.5;max-width:680px;margin-top:16px}
+.section{margin:36px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;max-width:680px}
+.card h3{font-size:19px;font-weight:700;margin-bottom:10px}
+.card p{color:var(--txt2);font-size:14px;line-height:1.7;margin-bottom:12px}
+.card p:last-child{margin-bottom:0}
+.feat-list{list-style:none;margin:14px 0 0}
+.feat-list li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:14px;color:var(--txt2)}
+.feat-list li b{color:var(--txt);font-weight:500}
+.feat-list .ic{color:var(--amber);flex-shrink:0}
+.signup-card{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--line2);border-radius:16px;padding:26px;max-width:680px;margin-top:16px;position:relative;overflow:hidden}
+.signup-card::after{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:var(--green);opacity:.7}
+.signup-form{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.signup-form input{flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--line2);color:var(--txt);padding:13px 16px;border-radius:10px;font-family:var(--mono);font-size:13px}
+.signup-form input:focus{outline:none;border-color:var(--amber)}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--amber);color:#1a1205;font-family:var(--mono);font-weight:700;font-size:13px;padding:13px 22px;border-radius:10px;text-decoration:none;border:none;cursor:pointer;transition:transform .15s;text-transform:uppercase;letter-spacing:.05em}
+.btn:hover{transform:translateY(-2px)}
+.tiny{font-size:11px;color:var(--txt3);margin-top:12px;font-family:var(--mono)}
+footer{border-top:1px solid var(--line);margin-top:50px;padding:28px 0 50px;font-size:12px;color:var(--txt3)}
+footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber)}
+@media(max-width:560px){.nav-inner{gap:10px}.card,.signup-card{padding:20px}}
+::-webkit-scrollbar{height:8px;width:8px}::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div id="site-header"></div>
+<div class="wrap">
+  <section class="section" style="padding-top:40px">
+    <div class="eyebrow">Open Channel &middot; Transmission</div>
+    <h1><span class="gt">About</span> Live Launchpad</h1>
+    <p class="sub">Mission control for the orbital era &mdash; one place for live launches, decades of reliability data, breaking news, and a rocket-fueled arcade.</p>
+  </section>
+
+  <section class="section">
+    <div class="card">
+      <h3>What is this?</h3>
+      <p>Live Launchpad is an independent spaceflight dashboard built by a space enthusiast. It pulls together the things worth tracking about the modern launch era and presents them without the clutter &mdash; mission-control style.</p>
+      <ul class="feat-list">
+        <li><span class="ic">&#9654;</span><span><b>The Index</b> &mdash; reliability scores for every major launch provider, plus the full arc of the Space Age from Sputnik to today.</span></li>
+        <li><span class="ic">&#9654;</span><span><b>Launch Schedule</b> &mdash; live upcoming launches with countdowns and status, from the Launch Library 2 database.</span></li>
+        <li><span class="ic">&#9654;</span><span><b>News</b> &mdash; the latest spaceflight headlines aggregated from across the industry.</span></li>
+        <li><span class="ic">&#9654;</span><span><b>In Development</b> &mdash; the rockets and programs being built right now, with their next milestones.</span></li>
+        <li><span class="ic">&#9654;</span><span><b>The Arcade</b> &mdash; original rocket-themed mini games. Because why not.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="signup-card">
+      <h3 style="font-size:19px;font-weight:700;margin-bottom:6px">&#128231; Get launch alerts</h3>
+      <p style="color:var(--txt2);font-size:14px;line-height:1.6">Drop your email for a heads-up before major launches and the occasional dispatch. No spam, just liftoffs.</p>
+      <form name="signup" method="POST" data-netlify="true" netlify-honeypot="bot-field" class="signup-form">
+        <input type="hidden" name="form-name" value="signup">
+        <p style="display:none"><label>Don't fill this out: <input name="bot-field"></label></p>
+        <input type="email" name="email" placeholder="you@orbit.com" required>
+        <button class="btn" type="submit">&#9654; Subscribe</button>
+      </form>
+      <div class="tiny">Powered by Netlify Forms &mdash; submissions appear in the site's Netlify dashboard. We don't share your email.</div>
+    </div>
+  </section>
+</div>
+<div id="site-footer"></div>
+<script>
+(function(){
+  var root=document.documentElement;
+  function setTheme(t){root.setAttribute('data-theme',t);var b=document.querySelector('.theme-btn');if(b)b.textContent=t==='light'?'\u2600':'\u263E';}
+  window.__toggleTheme=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
+  setTheme('dark');
+  var page=(location.pathname.split('/').pop()||'index.html');
+  var links=[['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['about.html','About']];
+  var nl=links.map(function(l){var a=(l[0]===page)?' class="active"':'';return '<a href="'+l[0]+'"'+a+'>'+l[1]+'</a>';}).join('');
+  var h=document.getElementById('site-header');
+  if(h)h.outerHTML='<nav class="nav"><div class="nav-inner"><a class="brand" href="index.html">\uD83D\uDE80 <span class="blink"></span> LIVE LAUNCHPAD</a><div class="nav-links">'+nl+'</div><button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">\u263E</button></div></nav>';
+  var f=document.getElementById('site-footer');
+  if(f)f.outerHTML='<footer><div class="wrap"><b>LIVE LAUNCHPAD</b> \u2014 mission control for the orbital era.<br>An independent project \u00B7 <a href="about.html">About</a> \u00B7 <a href="index-reliability.html">The Index</a></div></footer>';
+  var b=document.querySelector('.theme-btn');if(b)b.textContent='\u263E';
+  var c=document.getElementById('stars');if(c){var s='';for(var i=0;i<70;i++){var z=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);s+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+z+'px;height:'+z+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=s;}
+})();
+</script>
+</body>
+</html>
