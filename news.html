@@ -29,6 +29,16 @@ body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-weight:3
 .nav-links a.active{color:var(--amber);background:rgba(255,182,39,.1)}
 .theme-btn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0}
 .theme-btn:hover{color:var(--amber);border-color:var(--amber)}
+.nav-toggle{display:none;background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:18px;place-items:center;transition:all .15s}
+.nav-toggle:hover{color:var(--amber);border-color:var(--amber)}
+@media(max-width:860px){
+  .nav-toggle{display:grid}
+  .nav-inner{position:relative}
+  .brand{margin-right:auto}
+  .nav-links{display:none;position:absolute;top:calc(100% + 10px);left:0;right:0;flex:none;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 16px 40px rgba(0,0,0,.45);z-index:60}
+  .nav-links.open{display:flex}
+  .nav-links a{padding:11px 14px;border-radius:8px;font-size:14px}
+}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
 .eyebrow::before{content:"";width:32px;height:1px;background:var(--amber)}
 h1{font-weight:900;font-size:clamp(32px,6vw,56px);line-height:1;letter-spacing:-.025em}
@@ -109,12 +119,13 @@ load();
   var root=document.documentElement;
   function setTheme(t){root.setAttribute('data-theme',t);var b=document.querySelector('.theme-btn');if(b)b.textContent=t==='light'?'\u2600':'\u263E';}
   window.__toggleTheme=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
+  window.__toggleNav=function(){var n=document.querySelector('.nav-links');if(n)n.classList.toggle('open');};
   setTheme('dark');
   var page=(location.pathname.split('/').pop()||'index.html');
   var links=[['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['learn.html','Learn'],['about.html','About']];
   var nl=links.map(function(l){var a=(l[0]===page)?' class="active"':'';return '<a href="'+l[0]+'"'+a+'>'+l[1]+'</a>';}).join('');
   var h=document.getElementById('site-header');
-  if(h)h.outerHTML='<nav class="nav"><div class="nav-inner"><a class="brand" href="index.html">\uD83D\uDE80 <span class="blink"></span> LIVE LAUNCHPAD</a><div class="nav-links">'+nl+'</div><button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">\u263E</button></div></nav>';
+  if(h)h.outerHTML='<nav class="nav"><div class="nav-inner"><a class="brand" href="index.html">\uD83D\uDE80 <span class="blink"></span> LIVE LAUNCHPAD</a><div class="nav-links">'+nl+'</div><button class="nav-toggle" onclick="__toggleNav()" aria-label="Menu">\u2630</button><button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">\u263E</button></div></nav>';
   var f=document.getElementById('site-footer');
   if(f)f.outerHTML='<footer><div class="wrap"><b>LIVE LAUNCHPAD</b> \u2014 mission control for the orbital era. News via The Space Devs SNAPI.<br>An independent project \u00B7 <a href="about.html">About</a> \u00B7 <a href="index-reliability.html">The Index</a></div></footer>';
   var b=document.querySelector('.theme-btn');if(b)b.textContent='\u263E';
