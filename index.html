@@ -215,6 +215,23 @@ footer a:hover{color:var(--amber)}
       <div class="kpi" style="--accent:var(--coral)"><div class="l">SpaceX share</div><div class="v">38%</div></div>
     </div>
   </section>
+
+  <section class="section" id="join">
+    <div class="sec-head"><span class="idx">04</span> Join the mission</div>
+    <div class="sec-sub">Launch alerts in your inbox — no spam, just liftoffs.</div>
+    <div class="card" style="padding:24px;max-width:560px">
+      <h3 style="font-size:19px;font-weight:700;margin:0 0 6px">📡 Get launch alerts</h3>
+      <p style="color:var(--txt2);font-size:14px;line-height:1.6;margin:0">A heads-up before major launches and the occasional dispatch.</p>
+      <form name="signup" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="signupForm" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+        <input type="hidden" name="form-name" value="signup">
+        <p style="display:none"><label>Don’t fill this out: <input name="bot-field"></label></p>
+        <input type="email" name="email" placeholder="you@orbit.com" required style="flex:1;min-width:220px;background:var(--bg2,#0d121c);border:1px solid var(--line2,#2a3650);color:var(--txt);padding:13px 16px;border-radius:10px;font-family:var(--mono);font-size:13px">
+        <button class="btn" type="submit">▶ Subscribe</button>
+      </form>
+      <div id="signupMsg" style="font-family:var(--mono);font-size:12px;min-height:16px;margin-top:10px"></div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--txt3);margin-top:4px">Stored via Netlify Forms · we don’t share your email.</div>
+    </div>
+  </section>
 </div>
 
 <div id="site-footer"></div>
@@ -268,6 +285,21 @@ footer a:hover{color:var(--amber)}
   // re-apply theme button glyph after injection
   var t=document.documentElement.getAttribute('data-theme')||'dark';
   var b=document.querySelector('.theme-btn'); if(b) b.textContent=(t==='light'?'\u2600':'\u263E');
+})();
+</script>
+<script>
+/* Newsletter signup → Netlify Forms via AJAX (stay on page, show a thank-you) */
+(function(){
+  var f=document.getElementById('signupForm'); if(!f)return;
+  f.addEventListener('submit',function(e){
+    e.preventDefault();
+    var msg=document.getElementById('signupMsg');
+    var body=new URLSearchParams(new FormData(f)).toString();
+    if(msg){msg.style.color='var(--txt3)';msg.textContent='Sending…';}
+    fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body})
+      .then(function(r){ if(!r.ok)throw 0; f.reset(); if(msg){msg.style.color='var(--green)';msg.textContent='✓ You’re on the list — see you at the next launch.';} })
+      .catch(function(){ if(msg){msg.style.color='#ff5d5d';msg.textContent='That didn’t send — please try again in a moment.';} });
+  });
 })();
 </script>
 </body>
