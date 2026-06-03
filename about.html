@@ -95,13 +95,13 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     <div class="signup-card">
       <h3 style="font-size:19px;font-weight:700;margin-bottom:6px">&#128231; Get launch alerts</h3>
       <p style="color:var(--txt2);font-size:14px;line-height:1.6">Drop your email for a heads-up before major launches and the occasional dispatch. No spam, just liftoffs.</p>
-      <form name="signup" method="POST" data-netlify="true" netlify-honeypot="bot-field" class="signup-form">
-        <input type="hidden" name="form-name" value="signup">
-        <p style="display:none"><label>Don't fill this out: <input name="bot-field"></label></p>
+      <form data-ll-signup="about" class="signup-form">
+        <input type="text" name="hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
         <input type="email" name="email" placeholder="you@orbit.com" required>
         <button class="btn" type="submit">&#9654; Subscribe</button>
       </form>
-      <div class="tiny">Powered by Netlify Forms &mdash; submissions appear in the site's Netlify dashboard. We don't share your email.</div>
+      <div data-ll-signup-msg class="tiny" style="min-height:14px;margin-top:8px"></div>
+      <div class="tiny">No spam &mdash; just liftoffs. We don't share your email.</div>
     </div>
   </section>
 </div>
@@ -124,5 +124,6 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   var c=document.getElementById('stars');if(c){var s='';for(var i=0;i<70;i++){var z=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);s+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+z+'px;height:'+z+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=s;}
 })();
 </script>
+<script src="ll-signup.js" defer></script>
 </body>
 </html>
