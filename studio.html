@@ -865,7 +865,7 @@ var QuizStudio = (function(){
     var r=await sb.from('quiz_questions').select('*').eq('quiz_id',quiz.id).order('sort_order',{ascending:true});
     if(r.error){toast('Load failed: '+r.error.message,true);return;}
     list=r.data||[];
-    var h='<div class="crumb"><a id="qz-back">Quizzes</a><span class="sep">/</span><span class="cur">'+esc(quiz.title)+'</span></div><div class="addbar"><button class="btn" id="qz-qadd">+ New question</button> <button class="btn ghost" id="qz-hostbtn">▶ Host live</button></div>';
+    var h='<div class="crumb"><a id="qz-back">Quizzes</a><span class="sep">/</span><span class="cur">'+esc(quiz.title)+'</span></div><div class="addbar"><button class="btn" id="qz-qadd">+ New question</button> <button class="btn ghost" id="qz-gen">✨ Generate</button> <button class="btn ghost" id="qz-hostbtn">▶ Host live</button></div>';
     if(!list.length) h+='<div class="empty">No questions yet.</div>';
     list.forEach(function(q,i){ var ch=Array.isArray(q.choices)?q.choices:[]; var ans=ch[q.correct_index]||'—';
       h+='<div class="row" data-i="'+i+'"><div class="info"><h4>'+esc(q.prompt)+'</h4><div class="count">✓ '+esc(ans)+' · '+q.time_limit_s+'s'+(q.source_url?' · sourced':' · ⚠ no source')+'</div></div><div class="acts">'
@@ -873,6 +873,7 @@ var QuizStudio = (function(){
       +'<button class="iconbtn" data-act="edit">✎</button><button class="iconbtn danger" data-act="del">🗑</button></div></div>'; });
     host.innerHTML=h;
     el('qz-back').onclick=renderQuizzes; el('qz-qadd').onclick=function(){ questionEditor(null); };
+    var gb=el('qz-gen'); if(gb) gb.onclick=genQuestions;
     var hb=el('qz-hostbtn'); if(hb) hb.onclick=function(){ window.open('quiz-host.html?quiz='+quiz.id,'_blank'); };
     host.querySelectorAll('.row').forEach(function(rw){ var i=+rw.dataset.i, qq=list[i];
       rw.querySelectorAll('[data-act]').forEach(function(b){ b.onclick=function(){ var a=b.dataset.act;
@@ -906,6 +907,46 @@ var QuizStudio = (function(){
   }
   async function delQuestion(item){ if(!confirm('Delete this question?'))return; var r=await sb.from('quiz_questions').delete().eq('id',item.id); if(r.error){toast('Delete failed: '+r.error.message,true);return;} renderQuestions(); }
   async function reorderQ(i,j){ if(j<0||j>=list.length)return; var a=list.slice(),t=a[i];a[i]=a[j];a[j]=t; await Promise.all(a.map(function(it,idx){return sb.from('quiz_questions').update({sort_order:idx}).eq('id',it.id);})); renderQuestions(); }
+
+  /* ----- ✨ AI generate questions (real, cited, human-vetted) ----- */
+  var _gen=[];
+  function genQuestions(){
+    el('modal-box').innerHTML='<h3>✨ Generate questions</h3>'
+      +'<div class="field"><label>Topic</label><input id="g-topic" placeholder="e.g. SpaceX Falcon 9, the Apollo program, rocket propulsion"></div>'
+      +'<div style="display:flex;gap:10px"><div class="field" style="flex:1"><label>How many</label><input id="g-count" type="number" value="6"></div><div class="field" style="flex:1"><label>Difficulty</label><input id="g-diff" list="g-diffs" value="mixed"><datalist id="g-diffs"><option value="easy"><option value="medium"><option value="hard"><option value="mixed"></datalist></div></div>'
+      +'<div id="g-msg" style="font-family:var(--mono);font-size:11px;color:var(--txt3);min-height:14px"></div>'
+      +'<div id="g-list" style="max-height:42vh;overflow-y:auto"></div>'
+      +'<div class="modal-acts"><button class="btn ghost" id="g-cancel">Cancel</button><button class="btn" id="g-fetch">Generate</button></div>';
+    modal().classList.add('open');
+    el('g-cancel').onclick=closeModal; el('g-fetch').onclick=genFetch; el('g-topic').focus();
+  }
+  async function genFetch(){
+    var topic=el('g-topic').value.trim(), m=el('g-msg'); if(!topic){ m.style.color='#ff5d5d'; m.textContent='Enter a topic.'; return; }
+    var sess=await sb.auth.getSession(); var token=sess&&sess.data&&sess.data.session&&sess.data.session.access_token;
+    if(!token){ toast('Session expired — reload.',true); return; }
+    m.style.color='var(--txt3)'; m.textContent='Generating…'; el('g-fetch').disabled=true;
+    try{
+      var r=await fetch('/.netlify/functions/quiz-generate',{method:'POST',headers:{'content-type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({topic:topic,count:parseInt(el('g-count').value,10)||6,difficulty:el('g-diff').value.trim()})});
+      var d=await r.json(); if(!r.ok||!d.questions||!d.questions.length) throw new Error(d.error||'no questions');
+      _gen=d.questions;
+      el('g-list').innerHTML='<div style="font-family:var(--mono);font-size:11px;color:#ff8a5b;margin:8px 0 4px">⚠ Verify each fact &amp; source before adding.</div>'+d.questions.map(function(q,i){
+        var ch=q.choices.map(function(c,ci){ return '<div style="font-size:12px;color:'+(ci===q.correct_index?'var(--accent)':'var(--txt2)')+'">'+(ci===q.correct_index?'✓ ':'· ')+esc(c)+'</div>'; }).join('');
+        return '<label class="row" style="align-items:flex-start;cursor:pointer"><input type="checkbox" class="g-cb" data-i="'+i+'" checked style="flex:none;margin-top:3px"><div class="info"><h4 style="white-space:normal">'+esc(q.prompt)+'</h4>'+ch+'<div class="count">'+(q.source_url?('<a href="'+esc(q.source_url)+'" target="_blank" rel="noopener" style="color:#6da8ff">source ↗</a>'):'⚠ no source')+'</div></div></label>';
+      }).join('');
+      m.style.color='var(--accent)'; m.textContent='✓ '+d.questions.length+' drafted — untick any, then Add.';
+      el('g-fetch').textContent='Add selected'; el('g-fetch').disabled=false; el('g-fetch').onclick=genApply;
+    }catch(e){ m.style.color='#ff5d5d'; m.textContent='Generate failed: '+e.message; el('g-fetch').disabled=false; }
+  }
+  async function genApply(){
+    var chosen=[]; document.querySelectorAll('#g-list .g-cb').forEach(function(cb){ if(cb.checked) chosen.push(_gen[+cb.dataset.i]); });
+    if(!chosen.length){ toast('Nothing selected',true); return; }
+    el('g-fetch').disabled=true;
+    var base=list.length;
+    var rows=chosen.map(function(q,idx){ return {quiz_id:quiz.id,prompt:q.prompt,choices:q.choices,correct_index:q.correct_index,source_url:q.source_url||'',time_limit_s:20,points:1000,sort_order:base+idx}; });
+    var r=await sb.from('quiz_questions').insert(rows);
+    if(r.error){ toast('Save failed: '+r.error.message,true); el('g-fetch').disabled=false; return; }
+    closeModal(); renderQuestions(); toast('Added '+rows.length+' question'+(rows.length===1?'':'s'));
+  }
 
   function init(){ if(inited)return; inited=true; sb=window.LLAuth&&window.LLAuth.sb; host=el('qz-host'); msg=el('qz-msg'); if(!sb){toast('Not signed in',true);return;} renderQuizzes(); }
   return { init:init };
