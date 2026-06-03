@@ -80,6 +80,10 @@ footer a:hover{color:var(--amber)}
 /* ===== studio ===== */
 .studio-head{padding:36px 0 4px}
 .studio-msg{font-family:var(--mono);font-size:13px;min-height:18px;margin:18px 0 6px}
+.mode-tabs{display:inline-flex;gap:4px;margin:14px 0 2px;background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:4px}
+.mtab{background:none;border:none;color:var(--txt2);font-family:var(--mono);font-size:12px;padding:8px 16px;border-radius:7px;cursor:pointer}
+.mtab:hover{color:var(--txt)}
+.mtab.on{background:var(--amber);color:#1a1205;font-weight:700}
 .crumb{font-family:var(--mono);font-size:12px;color:var(--txt3);margin:22px 0 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .crumb a{color:var(--txt2);cursor:pointer;text-decoration:none}
 .crumb a:hover{color:var(--amber)}
@@ -126,8 +130,20 @@ footer a:hover{color:var(--amber)}
     This is what will power the public Learning Center — everything here is free to viewers.</p>
   </div>
 
-  <div class="studio-msg" id="studio-msg"></div>
-  <div id="studio"></div>
+  <div class="mode-tabs">
+    <button class="mtab on" data-mode="lessons">📚 Lessons</button>
+    <button class="mtab" data-mode="rockets">🚀 Rocket Explorer</button>
+  </div>
+
+  <div id="lessons-wrap">
+    <div class="studio-msg" id="studio-msg"></div>
+    <div id="studio"></div>
+  </div>
+
+  <div id="rocket-wrap" hidden>
+    <div class="studio-msg" id="rk-msg"></div>
+    <div id="rk-host"></div>
+  </div>
 
   <div class="modal" id="modal"><div class="modal-box" id="modal-box"></div></div>
 </div>
@@ -328,6 +344,155 @@ var Studio = (function(){
 
 // ll-auth.js calls this once the editor is logged in and the page is revealed.
 window.LL_ON_EDITOR = function(sb){ Studio.init(sb); };
+
+/* ===== ROCKET EXPLORER EDITOR ===== */
+var RocketStudio = (function(){
+  var sb, host, msg, inited=false;
+  var rocket=null, part=null, list=[];
+  function el(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
+  function toast(t,err){ if(!msg)return; msg.style.color=err?'#ff5d5d':'var(--green)'; msg.textContent=t||''; if(t){var c=t;setTimeout(function(){if(msg.textContent===c)msg.textContent='';},3000);} }
+  function modal(){return el('modal');}
+  function closeModal(){ modal().classList.remove('open'); }
+  var TBL={rocket:'rockets',part:'rocket_parts',pv:'part_videos'};
+
+  async function q(table, sel, filters, order){
+    var b=sb.from(table).select(sel||'*');
+    (filters||[]).forEach(function(f){b=b.eq(f[0],f[1]);});
+    if(order)b=b.order(order,{ascending:true});
+    var r=await b; if(r.error){toast('Load failed: '+r.error.message,true);return [];} return r.data||[];
+  }
+  function upDown(i,total){ return '<button class="iconbtn" data-act="up"'+(i===0?' disabled':'')+'>▲</button><button class="iconbtn" data-act="down"'+(i===total-1?' disabled':'')+'>▼</button>'; }
+  function wire(arr,kind){
+    host.querySelectorAll('.row').forEach(function(rowEl){
+      var i=+rowEl.dataset.i, item=arr[i];
+      rowEl.querySelectorAll('[data-act]').forEach(function(b){ b.onclick=function(){ act(b.dataset.act,kind,item,arr,i); }; });
+    });
+    host.querySelectorAll('[data-nav]').forEach(function(a){ a.onclick=function(){ var n=a.dataset.nav; if(n==='rockets')renderRockets(); else if(n==='parts')renderParts(); }; });
+  }
+  async function act(a,kind,item,arr,i){
+    if(a==='open'){ if(kind==='rocket'){rocket=item;renderParts();} else if(kind==='part'){part=item;renderPartVideos();} return; }
+    if(a==='edit'){ if(kind==='rocket')rocketEditor(item); else if(kind==='part')partEditor(item); return; }
+    if(a==='del'){ delItem(kind,item); return; }
+    if(a==='up'||a==='down') reorder(kind,arr,i,a==='up'?i-1:i+1);
+  }
+  function reRender(kind){ if(kind==='rocket')renderRockets(); else if(kind==='part')renderParts(); else renderPartVideos(); }
+  async function delItem(kind,item){
+    var label = kind==='pv'?'Unlink this video?':('Delete "'+(item.name||'')+'"? This also deletes everything inside it.');
+    if(!confirm(label))return;
+    var r=await sb.from(TBL[kind]).delete().eq('id',item.id);
+    if(r.error){toast('Failed: '+r.error.message,true);return;}
+    reRender(kind); toast(kind==='pv'?'Unlinked':'Deleted');
+  }
+  async function reorder(kind,arr,i,j){
+    if(j<0||j>=arr.length)return;
+    var a2=arr.slice(),t=a2[i];a2[i]=a2[j];a2[j]=t;
+    await Promise.all(a2.map(function(it,idx){return sb.from(TBL[kind]).update({display_order:idx}).eq('id',it.id);}));
+    reRender(kind);
+  }
+
+  async function renderRockets(){
+    rocket=null; part=null;
+    var rk=await q('rockets','*',null,'display_order'); list=rk;
+    var h='<div class="crumb"><span class="cur">Rockets</span></div><div class="addbar"><button class="btn" id="rk-add">+ New rocket</button></div>';
+    if(!rk.length) h+='<div class="empty">No rockets yet — create your first one.</div>';
+    rk.forEach(function(r,i){ h+='<div class="row" data-i="'+i+'"><div class="info"><h4>'+esc(r.name)+(r.published?'':' <span style="color:var(--txt3)">· draft</span>')+'</h4><div class="count">'+esc(r.slug)+' · '+esc(r.model_kind)+'</div></div><div class="acts">'+upDown(i,rk.length)+'<button class="iconbtn" data-act="edit">✎</button><button class="iconbtn danger" data-act="del">🗑</button><button class="iconbtn open" data-act="open">Parts ›</button></div></div>'; });
+    host.innerHTML=h; el('rk-add').onclick=function(){ rocketEditor(null); }; wire(rk,'rocket');
+  }
+  async function renderParts(){
+    part=null;
+    var parts=await q('rocket_parts','*',[['rocket_id',rocket.id]],'display_order'); list=parts;
+    var h='<div class="crumb"><a data-nav="rockets">Rockets</a><span class="sep">/</span><span class="cur">'+esc(rocket.name)+'</span></div><div class="addbar"><button class="btn" id="rk-add">+ New part</button></div>';
+    if(!parts.length) h+='<div class="empty">No parts yet.</div>';
+    parts.forEach(function(p,i){ var miss=!p.what_it_is&&!p.how_it_works; h+='<div class="row" data-i="'+i+'"><div class="info"><h4>'+esc(p.part_number?p.part_number+' · ':'')+esc(p.name)+'</h4><div class="count">mesh: '+esc(p.mesh_key)+(miss?' · ⚠ needs description':'')+'</div></div><div class="acts">'+upDown(i,parts.length)+'<button class="iconbtn" data-act="edit">✎</button><button class="iconbtn danger" data-act="del">🗑</button><button class="iconbtn open" data-act="open">Videos ›</button></div></div>'; });
+    host.innerHTML=h; el('rk-add').onclick=function(){ partEditor(null); }; wire(parts,'part');
+  }
+  async function renderPartVideos(){
+    var pv=await q('part_videos','id,display_order,video_id,videos(id,title,youtube_id)',[['part_id',part.id]],'display_order'); list=pv;
+    var h='<div class="crumb"><a data-nav="rockets">Rockets</a><span class="sep">/</span><a data-nav="parts">'+esc(rocket.name)+'</a><span class="sep">/</span><span class="cur">'+esc(part.name)+'</span></div><div class="addbar"><button class="btn" id="rk-link">+ Link a lesson video</button></div>';
+    if(!pv.length) h+='<div class="empty">No videos linked yet.</div>';
+    pv.forEach(function(row,i){ var v=row.videos||{}; h+='<div class="row" data-i="'+i+'">'+(v.youtube_id?'<img class="thumb" src="https://img.youtube.com/vi/'+esc(v.youtube_id)+'/mqdefault.jpg" alt="">':'')+'<div class="info"><h4>'+esc(v.title||'(missing video)')+'</h4></div><div class="acts">'+upDown(i,pv.length)+'<button class="iconbtn danger" data-act="del">Unlink</button></div></div>'; });
+    host.innerHTML=h; el('rk-link').onclick=openLinkModal; wire(pv,'pv');
+  }
+
+  function field(label,id,val,hint){ return '<div class="field"><label>'+label+(hint?' <span style="text-transform:none;color:var(--txt3)">'+hint+'</span>':'')+'</label><input id="'+id+'" value="'+esc(val==null?'':val)+'"></div>'; }
+  function area(label,id,val,hint){ return '<div class="field"><label>'+label+(hint?' <span style="text-transform:none;color:var(--txt3)">'+hint+'</span>':'')+'</label><textarea id="'+id+'">'+esc(val||'')+'</textarea></div>'; }
+
+  function rocketEditor(item){
+    el('modal-box').innerHTML='<h3>'+(item?'Edit ':'New ')+'rocket</h3>'
+      +field('Name','rk-name',item&&item.name)
+      +field('Slug','rk-slug',item&&item.slug,'(url id, e.g. starship)')
+      +field('Operator','rk-op',item&&item.operator)
+      +field('Subtitle','rk-subtitle',item&&item.subtitle)
+      +field('Height (m)','rk-height',item&&item.height_m)
+      +'<div class="field"><label>Model kind</label><input id="rk-kind" list="kind-list" value="'+esc((item&&item.model_kind)||'procedural')+'"><datalist id="kind-list"><option value="procedural"><option value="glb"></datalist></div>'
+      +field('Model URL','rk-modelurl',item&&item.model_url,'(.glb path; only if model kind = glb)')
+      +'<div class="field"><label style="text-transform:none"><input type="checkbox" id="rk-pub" '+((!item||item.published)?'checked':'')+'> Published (visible on the public page)</label></div>'
+      +'<div class="modal-acts"><button class="btn ghost" id="rk-cancel">Cancel</button><button class="btn" id="rk-save">Save</button></div>';
+    modal().classList.add('open'); el('rk-cancel').onclick=closeModal; el('rk-save').onclick=function(){ saveRocket(item); }; el('rk-name').focus();
+  }
+  async function saveRocket(item){
+    var name=el('rk-name').value.trim(), slug=el('rk-slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'-');
+    if(!name||!slug){toast('Name and slug required',true);return;}
+    var p={name:name,slug:slug,operator:el('rk-op').value.trim(),subtitle:el('rk-subtitle').value.trim(),height_m:parseFloat(el('rk-height').value)||null,model_kind:el('rk-kind').value.trim()||'procedural',model_url:el('rk-modelurl').value.trim()||null,published:el('rk-pub').checked};
+    el('rk-save').disabled=true; var r;
+    if(item) r=await sb.from('rockets').update(p).eq('id',item.id);
+    else { p.display_order=list.length; r=await sb.from('rockets').insert(p); }
+    if(r.error){toast('Save failed: '+r.error.message,true);el('rk-save').disabled=false;return;}
+    closeModal(); renderRockets(); toast('Saved');
+  }
+  function partEditor(item){
+    var specs=item&&Array.isArray(item.specs)?item.specs.map(function(s){return s[0]+': '+s[1];}).join('\n'):'';
+    el('modal-box').innerHTML='<h3>'+(item?'Edit ':'New ')+'part</h3>'
+      +field('Part number','pt-num',item&&item.part_number,'(e.g. 01)')
+      +field('Name','pt-name',item&&item.name)
+      +field('Mesh key','pt-mesh',item&&item.mesh_key,'(must match the 3D model part name)')
+      +area('What it is','pt-what',item&&item.what_it_is,'(you write this — human-authored)')
+      +area('How it works','pt-how',item&&item.how_it_works,'(you write this)')
+      +area('Specs','pt-specs',specs,'(one per line, "Label: value")')
+      +'<div class="modal-acts"><button class="btn ghost" id="pt-cancel">Cancel</button><button class="btn" id="pt-save">Save</button></div>';
+    modal().classList.add('open'); el('pt-cancel').onclick=closeModal; el('pt-save').onclick=function(){ savePart(item); }; el('pt-name').focus();
+  }
+  async function savePart(item){
+    var name=el('pt-name').value.trim(), mesh=el('pt-mesh').value.trim();
+    if(!name||!mesh){toast('Name and mesh key required',true);return;}
+    var specs=el('pt-specs').value.split('\n').map(function(l){var ix=l.indexOf(':');return ix<0?null:[l.slice(0,ix).trim(),l.slice(ix+1).trim()];}).filter(function(x){return x&&x[0];});
+    var p={part_number:el('pt-num').value.trim(),name:name,mesh_key:mesh,what_it_is:el('pt-what').value.trim(),how_it_works:el('pt-how').value.trim(),specs:specs};
+    el('pt-save').disabled=true; var r;
+    if(item) r=await sb.from('rocket_parts').update(p).eq('id',item.id);
+    else { p.rocket_id=rocket.id; p.display_order=list.length; r=await sb.from('rocket_parts').insert(p); }
+    if(r.error){toast('Save failed: '+r.error.message,true);el('pt-save').disabled=false;return;}
+    closeModal(); renderParts(); toast('Saved');
+  }
+  async function openLinkModal(){
+    el('modal-box').innerHTML='<h3>Link a lesson video</h3><div class="field"><input id="lk-search" placeholder="Search your video library…"></div><div id="lk-results" style="max-height:320px;overflow-y:auto"></div><div class="modal-acts"><button class="btn ghost" id="lk-cancel">Close</button></div>';
+    modal().classList.add('open'); el('lk-cancel').onclick=closeModal;
+    var vids=await q('videos','id,title,youtube_id',null,'created_at');
+    var linked={}; (list||[]).forEach(function(r){linked[r.video_id]=1;});
+    function draw(f){ f=(f||'').toLowerCase();
+      el('lk-results').innerHTML=vids.filter(function(v){return (v.title||'').toLowerCase().indexOf(f)>=0;}).map(function(v){var on=linked[v.id];return '<div class="row" style="margin-bottom:8px"><img class="thumb" src="https://img.youtube.com/vi/'+esc(v.youtube_id)+'/mqdefault.jpg" alt=""><div class="info"><h4>'+esc(v.title)+'</h4></div><div class="acts"><button class="iconbtn open" data-vid="'+esc(v.id)+'"'+(on?' disabled':'')+'>'+(on?'Linked':'+ Link')+'</button></div></div>';}).join('')||'<div class="empty">No videos. Add some under Lessons first.</div>';
+      el('lk-results').querySelectorAll('[data-vid]').forEach(function(b){ b.onclick=function(){ linkVideo(b.dataset.vid); }; });
+    }
+    el('lk-search').oninput=function(){draw(this.value);}; draw('');
+  }
+  async function linkVideo(videoId){
+    var r=await sb.from('part_videos').insert({part_id:part.id,video_id:videoId,display_order:(list||[]).length});
+    if(r.error){toast('Link failed: '+r.error.message,true);return;}
+    closeModal(); renderPartVideos(); toast('Linked');
+  }
+
+  function init(){ if(inited)return; inited=true; sb=window.LLAuth&&window.LLAuth.sb; host=el('rk-host'); msg=el('rk-msg'); if(!sb){toast('Not signed in',true);return;} renderRockets(); }
+  return { init:init };
+})();
+
+/* mode toggle: Lessons <-> Rocket Explorer */
+document.querySelectorAll('.mtab').forEach(function(b){ b.onclick=function(){
+  var mode=b.dataset.mode;
+  document.querySelectorAll('.mtab').forEach(function(x){x.classList.toggle('on',x===b);});
+  document.getElementById('lessons-wrap').hidden = mode!=='lessons';
+  document.getElementById('rocket-wrap').hidden = mode!=='rockets';
+  if(mode==='rockets') RocketStudio.init();
+}; });
 </script>
 
 <script>window.LL_GATE = { title:'CONTENT STUDIO', tagline:'Editors only. The studio for building the Learning Center.' };</script>
