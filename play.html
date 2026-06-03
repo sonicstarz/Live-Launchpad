@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Play — Live Launchpad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chivo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#04060c;--panel:#0e131b;--line:#1d2533;--line2:#2a3547;--txt:#e6edf3;--txt2:#8a97a8;--txt3:#586677;--amber:#ffb627;--green:#3ddc84;--red:#ff5d5d;--mono:'Space Mono',monospace;--sans:'Chivo',sans-serif}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--txt);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column}
+  .top{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;font-weight:900}
+  .top .blink{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+  .top .me{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--txt2)}
+  .wrap{flex:1;display:flex;flex-direction:column;padding:18px 16px}
+  .scr{flex:1;display:none;flex-direction:column}
+  .scr.on{display:flex}
+  .center{margin:auto;width:100%;max-width:420px;text-align:center}
+  label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt2);margin:14px 0 6px;text-align:left}
+  input{width:100%;background:var(--panel);border:1px solid var(--line2);color:var(--txt);border-radius:11px;font-family:var(--mono);font-size:18px;padding:14px 16px;outline:none}
+  input:focus{border-color:var(--amber)}
+  #code{letter-spacing:.3em;text-transform:uppercase;text-align:center;font-weight:700}
+  .go{width:100%;background:var(--amber);color:#1a1205;border:none;border-radius:12px;font-family:var(--mono);font-weight:700;font-size:17px;padding:15px;margin-top:20px;cursor:pointer}
+  .go:disabled{opacity:.5}
+  .msg{font-family:var(--mono);font-size:13px;color:var(--txt3);min-height:16px;margin-top:12px}
+  .hint{font-family:var(--mono);font-size:13px;color:var(--txt3);margin-top:8px}
+  h2{font-size:22px;font-weight:900;margin-bottom:4px}
+  /* answer grid */
+  .qp{font-size:18px;font-weight:700;text-align:center;margin-bottom:14px}
+  .ans{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .ab{border:none;border-radius:16px;color:#04060c;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;min-height:30%}
+  .ab .shape{font-size:30px}
+  .a0{background:#ff5d5d}.a1{background:#4d9fff}.a2{background:#ffb627}.a3{background:#3ddc84}
+  .ab:disabled{opacity:.5}
+  .big{font-size:30px;font-weight:900;text-align:center}
+  .result{font-size:64px;text-align:center;line-height:1}
+  .rank{font-family:var(--mono);font-size:15px;color:var(--txt2);text-align:center;margin-top:10px}
+</style>
+</head>
+<body>
+  <div class="top"><span class="blink"></span>🚀 LIVE LAUNCHPAD <span class="me" id="me"></span></div>
+  <div class="wrap">
+    <div class="scr on" id="join">
+      <div class="center">
+        <h2>Join the game</h2>
+        <div class="hint">Get the code from the screen up front.</div>
+        <label>Game code</label><input id="code" maxlength="6" placeholder="ABC123" autocomplete="off" autocapitalize="characters">
+        <label>Your name</label><input id="name" maxlength="20" placeholder="Nickname" autocomplete="off">
+        <button class="go" id="joinbtn">Enter</button>
+        <div class="msg" id="jmsg"></div>
+      </div>
+    </div>
+    <div class="scr" id="wait"><div class="center"><h2 id="waittitle">You're in! 🚀</h2><div class="hint" id="waitmsg">Waiting for the host to start…</div></div></div>
+    <div class="scr" id="quiz">
+      <div class="qp" id="qp"></div>
+      <div class="ans" id="ans"></div>
+    </div>
+    <div class="scr" id="locked"><div class="center"><div class="big" id="lockedbig">Locked in ✓</div><div class="hint">Eyes up front…</div></div></div>
+    <div class="scr" id="result"><div class="center"><div class="result" id="ricon"></div><div class="big" id="rtext" style="margin-top:10px"></div><div class="rank" id="rrank"></div></div></div>
+  </div>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  var sb=createClient('https://oshizhnblnsrjutxyxxg.supabase.co','sb_publishable_QMaIcq2mO6q5qbE-5gT14A_Q-2dKT5r');
+  var SHAPES=['▲','◆','●','■'];
+  var ch, pid=Math.random().toString(36).slice(2)+Date.now().toString(36), name='', myChoice=-1, recvTs=0, curI=-1;
+  var $=function(id){return document.getElementById(id);};
+  function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
+  function show(id){ ['join','wait','quiz','locked','result'].forEach(function(x){ $(x).classList.toggle('on',x===id); }); }
+
+  // prefill code from ?code=
+  var pc=new URLSearchParams(location.search).get('code'); if(pc) $('code').value=pc.toUpperCase();
+
+  $('joinbtn').onclick=join;
+  function join(){
+    var code=($('code').value||'').trim().toUpperCase(); name=($('name').value||'').trim();
+    if(!/^[A-Z0-9]{4,8}$/.test(code)){ $('jmsg').textContent='Enter the game code from the screen.'; return; }
+    if(!name){ $('jmsg').textContent='Enter a name.'; return; }
+    $('joinbtn').disabled=true; $('jmsg').textContent='Joining…';
+    ch=sb.channel('quiz:'+code,{config:{broadcast:{self:false},presence:{key:pid}}});
+    ch.on('broadcast',{event:'state'},onState);
+    ch.on('broadcast',{event:'question'},onQuestion);
+    ch.on('broadcast',{event:'reveal'},onReveal);
+    ch.on('broadcast',{event:'final'},onFinal);
+    ch.subscribe(function(s){
+      if(s==='SUBSCRIBED'){ ch.track({name:name,role:'player'}); $('me').textContent=name; show('wait'); }
+      else if(s==='CHANNEL_ERROR'||s==='TIMED_OUT'){ $('joinbtn').disabled=false; $('jmsg').textContent='Couldn’t connect — check the code and try again.'; }
+    });
+  }
+  function onState(o){ var p=o.payload||{}; if(p.phase==='lobby'){ if(!$('quiz').classList.contains('on')) show('wait'); } }
+  function onQuestion(o){
+    var p=o.payload||{}; curI=p.i; myChoice=-1; recvTs=Date.now();
+    $('qp').textContent=p.prompt;
+    $('ans').innerHTML=(p.choices||[]).map(function(c,i){ return '<button class="ab a'+i+'" data-i="'+i+'"><span class="shape">'+SHAPES[i]+'</span></button>'; }).join('');
+    $('ans').querySelectorAll('[data-i]').forEach(function(b){ b.onclick=function(){ answer(+b.dataset.i); }; });
+    show('quiz');
+  }
+  function answer(i){
+    if(myChoice>=0)return; myChoice=i;
+    ch.send({type:'broadcast',event:'answer',payload:{pid:pid,name:name,i:curI,choice:i,ms:Date.now()-recvTs}});
+    $('lockedbig').innerHTML='Locked in <span style="color:var(--green)">'+SHAPES[i]+'</span>';
+    show('locked');
+  }
+  function rankOf(lb){ for(var i=0;i<lb.length;i++){ if(lb[i].name===name) return {rank:i+1,score:lb[i].score}; } return null; }
+  function onReveal(o){
+    var p=o.payload||{}; var correct=(myChoice===p.correct);
+    $('ricon').textContent= myChoice<0?'⏱':(correct?'✅':'❌');
+    $('rtext').textContent= myChoice<0?'No answer':(correct?'Correct!':'Not quite');
+    var r=rankOf(p.leaderboard||[]);
+    $('rrank').textContent= r?('#'+r.rank+' · '+r.score+' pts'):'';
+    show('result');
+  }
+  function onFinal(o){
+    var p=o.payload||{}; var r=rankOf(p.leaderboard||[]);
+    $('ricon').textContent= r&&r.rank<=3?['🥇','🥈','🥉'][r.rank-1]:'🏁';
+    $('rtext').textContent= r?('You finished #'+r.rank):'Game over';
+    $('rrank').textContent= r?(r.score+' pts · thanks for playing!'):'';
+    show('result');
+  }
+</script>
+</body>
+</html>
