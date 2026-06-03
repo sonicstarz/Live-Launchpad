@@ -135,6 +135,73 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
 .g-info .gi-text{font-size:13px;color:var(--txt2);line-height:1.55}
 
 .g-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:300;background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--amber);color:var(--txt);font-size:13px;font-family:var(--mono);padding:12px 18px;border-radius:8px;box-shadow:0 16px 40px rgba(0,0,0,.5);max-width:88vw;display:none}
+
+/* entering-3D-space warp */
+.g-warp{position:absolute;inset:0;z-index:8;display:none;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,rgba(255,182,39,.10),rgba(4,6,12,.96) 60%)}
+.g-warp.run{display:block;animation:warp 1.5s ease-out forwards}
+.g-warp::before,.g-warp::after{content:"";position:absolute;inset:-20%;background:
+  repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,.0) 0deg, rgba(255,255,255,.0) 4deg, rgba(190,212,255,.16) 4.4deg, rgba(255,255,255,0) 5deg);
+  animation:warpspin 1.5s ease-out forwards}
+.g-warp::after{animation-direction:reverse;opacity:.5}
+@keyframes warp{0%{opacity:1}70%{opacity:.5}100%{opacity:0}}
+@keyframes warpspin{0%{transform:scale(.2) rotate(0deg);opacity:0}25%{opacity:1}100%{transform:scale(2.6) rotate(40deg);opacity:0}}
+
+/* zoom level bar (two-hand zoom) */
+.g-zoombar{position:absolute;top:50%;right:18px;transform:translateY(-50%);width:6px;height:160px;background:rgba(255,255,255,.08);border:1px solid var(--line2);border-radius:6px;overflow:hidden;display:none;z-index:6}
+.viewer.fs .g-zoombar.show{display:block}
+.g-zoombar .fill{position:absolute;left:0;right:0;bottom:0;height:50%;background:linear-gradient(var(--amber),#ff7a00);transition:height .1s linear}
+
+/* pre-flight modal */
+.g-modal{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(4,6,12,.78);backdrop-filter:blur(6px);overflow-y:auto}
+.g-modal.show{display:flex}
+.g-modal-card{position:relative;width:560px;max-width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:28px;box-shadow:0 30px 80px rgba(0,0,0,.6);animation:modalin .3s ease-out}
+.g-modal-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--amber);border-radius:16px 16px 0 0}
+@keyframes modalin{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+.g-modal-x{position:absolute;top:14px;right:14px;background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px}
+.g-modal-x:hover{color:var(--amber);border-color:var(--amber)}
+.g-modal-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--amber)}
+.g-modal-h{font-size:26px;font-weight:900;letter-spacing:-.02em;margin:6px 0 4px}
+.g-modal-sub{color:var(--txt2);font-size:14px;margin-bottom:18px}
+.g-demos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.g-demo{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 10px;text-align:center}
+.g-demo .hands{height:46px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:30px;margin-bottom:6px}
+.g-demo b{display:block;font-size:13px;font-weight:700;font-family:var(--mono);color:var(--txt)}
+.g-demo span{display:block;font-size:11px;color:var(--txt3);line-height:1.35;margin-top:3px}
+.g-demo .hand{display:inline-block;will-change:transform,opacity}
+.hand.orbit{animation:h-orbit 2.2s ease-in-out infinite}
+@keyframes h-orbit{0%,100%{transform:translateX(-12px) rotate(-12deg)}50%{transform:translateX(12px) rotate(12deg)}}
+.hands.two .hand.zl{animation:h-zl 2.4s ease-in-out infinite}
+.hands.two .hand.zr{animation:h-zr 2.4s ease-in-out infinite}
+@keyframes h-zl{0%,100%{transform:translateX(-2px)}50%{transform:translateX(-16px)}}
+@keyframes h-zr{0%,100%{transform:translateX(2px)}50%{transform:translateX(16px)}}
+.hand.pt{animation:h-fade 2s ease-in-out infinite}
+.hand.pn{position:relative;margin-left:-6px;animation:h-fade2 2s ease-in-out infinite}
+@keyframes h-fade{0%,40%{opacity:1;transform:scale(1)}55%,100%{opacity:.15;transform:scale(.85)}}
+@keyframes h-fade2{0%,40%{opacity:.15;transform:scale(.85)}55%,100%{opacity:1;transform:scale(1.05)}}
+.g-tips{list-style:none;display:flex;flex-direction:column;gap:7px;margin:0 0 14px;padding:0}
+.g-tips li{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--txt2)}
+.g-tips li span{font-size:15px;width:20px;text-align:center}
+.g-mobile-note{display:none;background:rgba(255,182,39,.1);border:1px solid rgba(255,182,39,.4);border-radius:10px;padding:11px 13px;font-size:12.5px;color:var(--txt);line-height:1.45;margin-bottom:14px}
+.g-mobile-note.show{display:block}
+.g-start{width:100%;font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.03em;padding:14px;border-radius:11px;border:1px solid var(--amber);background:var(--amber);color:#1a1205;cursor:pointer;transition:all .15s}
+.g-start:hover{box-shadow:0 0 0 3px rgba(255,182,39,.2)}
+.g-start[disabled]{opacity:.6;cursor:wait}
+.g-privacy-note{text-align:center;font-family:var(--mono);font-size:10.5px;color:var(--txt3);margin-top:10px}
+
+/* mobile / small screens */
+@media(max-width:760px){
+  .g-legend{width:170px;padding:10px;top:12px;left:12px}
+  .g-legend .g-row .txt{font-size:11px}
+  .g-cam{width:150px;bottom:12px;right:12px}
+  .g-hud{top:12px;font-size:10px;padding:7px 12px}
+  .g-info{width:auto;left:12px;right:12px;max-width:none;bottom:12px;padding:13px}
+  .g-demos{grid-template-columns:1fr;gap:8px}
+  .g-demo{display:flex;align-items:center;gap:12px;text-align:left;padding:10px}
+  .g-demo .hands{height:auto;margin:0;font-size:26px;flex-shrink:0}
+  .g-modal-card{padding:20px}
+  .g-modal-h{font-size:22px}
+  .g-zoombar{height:120px;right:10px}
+}
 </style>
 </head>
 <body>
@@ -150,9 +217,9 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     <span class="gprivacy">Control the rocket with hand gestures. Camera runs only in your browser — nothing is uploaded. Mouse &amp; touch always work.</span>
     <div class="guide">
       <span class="g-chip"><span class="ico">✋</span><span class="txt"><b>Hold to arm</b>open palm ~1s</span></span>
-      <span class="g-chip"><span class="ico">🖐️</span><span class="txt"><b>Orbit</b>move open palm</span></span>
-      <span class="g-chip"><span class="ico">👌</span><span class="txt"><b>Zoom</b>pinch + spread</span></span>
-      <span class="g-chip"><span class="ico">☝️</span><span class="txt"><b>Cursor</b>point index</span></span>
+      <span class="g-chip"><span class="ico">🖐️</span><span class="txt"><b>Orbit</b>move one hand · fling it</span></span>
+      <span class="g-chip"><span class="ico">🙌</span><span class="txt"><b>Zoom</b>two hands — apart/together</span></span>
+      <span class="g-chip"><span class="ico">☝️</span><span class="txt"><b>Cursor</b>point one finger</span></span>
       <span class="g-chip"><span class="ico">🤏</span><span class="txt"><b>Select</b>point + pinch</span></span>
     </div>
   </div>
@@ -163,13 +230,15 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       <div class="viewer-load" id="vload">◌ Loading model…</div>
 
       <!-- gesture-mode overlays (shown only in full-screen) -->
+      <div class="g-warp" id="gWarp"></div>
+      <div class="g-zoombar" id="gZoomBar"><div class="fill" id="gZoomFill"></div></div>
       <div class="g-hud" id="gHud"><span class="dot"></span><span class="st" id="gHudState">Idle</span><span class="act" id="gHudAct"></span></div>
       <button class="g-exit" id="gExit">✕ Exit gesture mode</button>
       <div class="g-legend" id="gLegend">
         <div class="lg-h">Gestures</div>
         <div class="g-row arm" data-act="arm"><span class="ico">✋</span><span class="txt"><b>Arm tracking</b>hold open palm ~1s</span></div>
-        <div class="g-row" data-act="orbit"><span class="ico">🖐️</span><span class="txt"><b>Orbit</b>move open palm</span></div>
-        <div class="g-row" data-act="zoom"><span class="ico">👌</span><span class="txt"><b>Zoom</b>pinch, then spread/close</span></div>
+        <div class="g-row" data-act="orbit"><span class="ico">🖐️</span><span class="txt"><b>Orbit</b>move one hand · fling &amp; catch</span></div>
+        <div class="g-row" data-act="zoom"><span class="ico">🙌</span><span class="txt"><b>Zoom</b>two hands — apart out, together in</span></div>
         <div class="g-row" data-act="cursor"><span class="ico">☝️</span><span class="txt"><b>Cursor</b>point with index</span></div>
         <div class="g-row" data-act="select"><span class="ico">🤏</span><span class="txt"><b>Select part</b>point + pinch</span></div>
       </div>
@@ -195,6 +264,30 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
 </div>
 <div class="g-cursor" id="gCursor"></div>
 <div class="g-toast" id="gToast"></div>
+
+<!-- pre-flight modal: shown before the camera turns on -->
+<div class="g-modal" id="gModal">
+  <div class="g-modal-card">
+    <button class="g-modal-x" id="gModalX" aria-label="Close">✕</button>
+    <div class="g-modal-eyebrow">Gesture Mode</div>
+    <h2 class="g-modal-h">Fly the rocket with your hands</h2>
+    <p class="g-modal-sub">Wave, fling, and pinch in front of your webcam. Here's the playbook:</p>
+    <div class="g-demos">
+      <div class="g-demo"><div class="hands"><span class="hand orbit">🖐️</span></div><b>Orbit</b><span>move one open hand — fling it and it keeps spinning</span></div>
+      <div class="g-demo"><div class="hands two"><span class="hand zl">✋</span><span class="hand zr">✋</span></div><b>Zoom</b><span>two hands — apart to pull out, together to push in</span></div>
+      <div class="g-demo"><div class="hands"><span class="hand pt">☝️</span><span class="hand pn">🤏</span></div><b>Select</b><span>point a finger, then pinch to open a part</span></div>
+    </div>
+    <ul class="g-tips">
+      <li><span>💡</span> Bright, even lighting on your hands works best</li>
+      <li><span>🖥️</span> Designed for desktop/laptop with a webcam</li>
+      <li><span>📏</span> Keep hands about an arm's length from the camera</li>
+    </ul>
+    <div class="g-mobile-note" id="gMobileNote">📱 Heads up — you're on a small screen. Gesture Mode really shines on a desktop with a webcam (especially two-hand zoom). You're welcome to try it here anyway.</div>
+    <button class="g-start" id="gStart">Enable camera &amp; launch →</button>
+    <div class="g-privacy-note">🔒 The camera runs entirely in your browser — nothing is uploaded or stored.</div>
+  </div>
+</div>
+
 <div id="site-footer"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -212,7 +305,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
 
   var scene,camera,renderer,controls,raf,rocketGroup,selectable=[],selectedKey=null;
   var rockets=[],partsByRocket={},vidsByPart={},current=null;
-  var gSph,gTgt,gDriving=false; /* gesture camera state (shared with mouse OrbitControls) */
+  var gSph,gTgt,gTick=null; /* gesture camera state; gTick (set by gesture module) drives the camera while active */
 
   /* ---------- data ---------- */
   function getJSON(path){ return fetch(REST+path,{headers:H}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];}); }
@@ -254,25 +347,20 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   }
   function animate(){
     raf=requestAnimationFrame(animate);
-    if(gDriving){ if(controls)controls.enabled=false; gApplyCamera(); }
-    else { if(controls){ controls.enabled=true; controls.update(); } gSyncFromCamera(); }
+    /* gTick handles the camera (intro / gesture drive / momentum) while gesture mode is on;
+       returns false when off, so mouse + touch OrbitControls take over. */
+    if(!(gTick && gTick())){
+      if(controls){ controls.enabled=true; controls.update(); }
+      gSyncFromCamera();
+    }
     renderer.render(scene,camera);
   }
-  /* gesture camera helpers — our own spherical, lerped toward a target, shared with mouse */
+  /* keep our spherical warm from the live camera so gesture take-over is seamless */
   function gSyncFromCamera(){
     if(!camera||!controls) return;
     if(!gSph){ gSph=new THREE.Spherical(); gTgt=new THREE.Spherical(); }
     var off=camera.position.clone().sub(controls.target);
     gSph.setFromVector3(off); gTgt.copy(gSph);
-  }
-  function gApplyCamera(){
-    if(!gSph) return;
-    gSph.theta+=(gTgt.theta-gSph.theta)*0.18;
-    gSph.phi  +=(gTgt.phi  -gSph.phi  )*0.18;
-    gSph.radius+=(gTgt.radius-gSph.radius)*0.16;
-    gSph.makeSafe();
-    camera.position.setFromSpherical(gSph).add(controls.target);
-    camera.lookAt(controls.target);
   }
 
   var downXY=null;
@@ -420,16 +508,22 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   /* ========================================================================
      GESTURE MODE — optional hand control, reusing the scene above.
      Mapping (active only once ARMED):
-       • ORBIT  — open palm, hand X/Y → camera azimuth/polar (relative).
-       • ZOOM   — pinch in an open hand (OK/caliper); thumb-index gap → dolly.
+       • ORBIT  — one open hand; hand X/Y → camera azimuth/polar (relative).
+                  Has momentum: fling it and it keeps spinning; re-grab to catch.
+       • ZOOM   — TWO hands; the gap between them → dolly. Apart = zoomed out,
+                  together = zoomed in (absolute mapping over a comfortable range).
        • CURSOR — point with index; fingertip drives the amber cursor.
        • SELECT — pinch while pointing → raycast from camera through cursor.
-     State machine: IDLE → ARMING (open palm steady ~1s) → ARMED → action.
-     One-Euro smoothing + pinch hysteresis + select cooldown. MediaPipe is
-     lazy-loaded on first toggle; the page is fully usable with mouse/touch.
+     State machine: IDLE → ARMING (open palm steady ~0.8s) → ARMED → action.
+     A pre-flight modal (tips + animated demo hands) precedes the camera, and a
+     warp dolly plays on entry. One-Euro smoothing, a pose-family debounce (kills
+     orbit/cursor flip-flop), pinch hysteresis, and a select cooldown keep it
+     stable. MediaPipe (2 hands) is lazy-loaded on first launch; the page is fully
+     usable with mouse/touch and never needs the camera.
      ===================================================================== */
   (function(){
     function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+    function lerp(a,b,k){ return a+(b-a)*k; }
     function now(){ return performance.now(); }
 
     /* One-Euro filter (per scalar): velocity-adaptive low-pass */
@@ -446,51 +540,69 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     function EuroPt(mc,beta){ this.fx=new OneEuro(mc,beta); this.fy=new OneEuro(mc,beta); }
     EuroPt.prototype.f=function(x,y,t){ return { x:this.fx.f(x,t), y:this.fy.f(y,t) }; };
 
-    var fPalm=new EuroPt(1.0,0.01), fIndex=new EuroPt(2.0,0.02), fThumb=new EuroPt(2.0,0.02), fPinch=new OneEuro(2.0,0.02);
+    /* snappier cursor, smoother orbit; separate filter for two-hand gap */
+    var fPalm=new EuroPt(1.6,0.02), fIndex=new EuroPt(3.0,0.04), fThumb=new EuroPt(3.0,0.04),
+        fPinch=new OneEuro(2.6,0.03), fSep=new OneEuro(1.6,0.02);
 
     /* tunables */
-    var ARM_HOLD_MS=1000, ARM_MOVE_TOL=0.05, HAND_LOST_MS=600,
-        PINCH_ON=0.34, PINCH_OFF=0.52, ZOOM_EXIT=0.92,
-        SELECT_COOLDOWN=450, ORBIT_GAIN=3.2, INFER_MS=33;
+    var ARM_HOLD_MS=800, ARM_MOVE_TOL=0.06, HAND_LOST_MS=500,
+        PINCH_ON=0.32, PINCH_OFF=0.50, SELECT_COOLDOWN=420,
+        ORBIT_GAIN=3.4, INFER_MS=24, POSE_DEBOUNCE=2,
+        SEP_MIN=0.16, SEP_MAX=0.82, IDLE_SPIN=0.0013;
 
     /* runtime state */
     var landmarker=null, stream=null, rvfcId=null, lastInfer=0, detectorLoading=false, gestureOn=false;
     var STATE='IDLE', armAccum=0, armAnchor=null, lastArmT=0, lastSeen=0;
-    var pinchActive=false, zoomLatched=false, zoomAnchor=null, orbitAnchor=null, lastSelect=0;
-    var cx=null, cy=null, wasPinch=false;
+    var pinchActive=false, orbitAnchor=null, lastSelect=0, cx=null, cy=null, wasPinch=false;
+    var curAction='none', gVelT=0, gVelP=0, intro=null;
+    var poseFamily='open', poseCand=null, poseCandN=0;
+    var isMobile=(window.matchMedia && (window.matchMedia('(pointer:coarse)').matches)) || window.innerWidth<760;
 
     var E={ btn:el('gestureBtn'), exit:el('gExit'), viewer:el('viewer'), video:el('gVideo'),
       hud:el('gHud'), hudState:el('gHudState'), hudAct:el('gHudAct'),
       calib:el('gCalib'), calibFill:el('gCalibFill'), calibLabel:el('gCalibLabel'),
-      cursor:el('gCursor'), toast:el('gToast'), legend:el('gLegend') };
+      cursor:el('gCursor'), toast:el('gToast'), legend:el('gLegend'),
+      modal:el('gModal'), modalX:el('gModalX'), start:el('gStart'), mobileNote:el('gMobileNote'),
+      warp:el('gWarp'), zoombar:el('gZoomBar'), zoomfill:el('gZoomFill') };
 
     window.gInfo=function(key,name,text){ if(!E||!el('gKey'))return; el('gKey').textContent=key||'Selected'; el('gName').textContent=name||'—'; el('gText').textContent=text||''; };
 
     function toast(msg,ms){ ms=ms||4200; E.toast.textContent=msg; E.toast.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(function(){ E.toast.style.display='none'; },ms); }
 
-    E.btn.onclick=function(){ gestureOn?exitGesture():enterGesture(); };
+    /* ---- wiring: button opens the modal; modal "start" turns the camera on ---- */
+    E.btn.onclick=function(){ if(gestureOn) exitGesture(); else openModal(); };
     E.exit.onclick=exitGesture;
+    E.start.onclick=startGesture;
+    E.modalX.onclick=closeModal;
+    E.modal.addEventListener('click',function(ev){ if(ev.target===E.modal) closeModal(); });
 
-    function enterGesture(){
-      if(detectorLoading) return;
+    function openModal(){
       if(!renderer){ toast('3D scene is still loading — try again in a moment.'); return; }
       if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ toast('Camera API unavailable in this browser — mouse & touch still work.'); return; }
-      E.btn.disabled=true; E.btn.textContent='◌ Starting camera…';
+      E.mobileNote.classList.toggle('show', isMobile);
+      E.modal.classList.add('show');
+    }
+    function closeModal(){ E.modal.classList.remove('show'); }
+
+    function startGesture(){
+      if(detectorLoading) return;
+      E.start.disabled=true; E.start.textContent='◌ Starting camera…';
       navigator.mediaDevices.getUserMedia({ video:{ width:640, height:480, facingMode:'user' }, audio:false })
         .then(function(s){
           stream=s; E.video.srcObject=s; E.video.play().catch(function(){});
-          E.btn.textContent='◌ Loading hand model…';
+          E.start.textContent='◌ Loading hand model…';
           return loadLandmarker();
         })
         .then(function(){
-          gestureOn=true; E.viewer.classList.add('fs'); E.btn.classList.add('on');
-          E.btn.disabled=false; E.btn.textContent='■ Exit Gesture Mode';
-          setState('IDLE'); resetArming(); onResize();
-          toast('Gesture mode on. Hold an open palm steady inside the box to arm tracking.');
-          startInference();
+          gestureOn=true; closeModal();
+          E.viewer.classList.add('fs'); E.btn.classList.add('on'); E.btn.textContent='■ Exit Gesture Mode';
+          E.start.disabled=false; E.start.textContent='Enable camera & launch →';
+          setState('IDLE'); resetArming(); curAction='none'; gVelT=0; gVelP=0;
+          onResize(); startIntro(); startInference();
+          toast('Hold one open palm steady in the box to arm — then fling to orbit, two hands to zoom.');
         })
         .catch(function(err){
-          cleanupStream(); E.btn.disabled=false; E.btn.textContent='✋ Gesture Mode';
+          cleanupStream(); E.start.disabled=false; E.start.textContent='Enable camera & launch →';
           var denied=err&&err.name==='NotAllowedError';
           toast(denied
             ? 'Camera permission denied — staying in mouse/touch mode. Re-enable it in your browser’s site settings.'
@@ -498,12 +610,23 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
         });
     }
 
+    function startIntro(){
+      gSyncFromCamera();
+      var r1=gSph.radius, th1=gSph.theta, ph1=gSph.phi;
+      intro={ t:now(), dur:1500,
+        r0:clamp(r1*1.7, r1+12, controls.maxDistance*1.3), r1:r1,
+        th0:th1-1.1, th1:th1,
+        ph0:clamp(ph1+0.22,0.18,Math.PI-0.18), ph1:ph1 };
+      E.warp.classList.remove('run'); void E.warp.offsetWidth; E.warp.classList.add('run');
+      setTimeout(function(){ E.warp.classList.remove('run'); },1650);
+    }
+
     function exitGesture(){
-      gestureOn=false; stopInference(); cleanupStream();
+      gestureOn=false; intro=null; stopInference(); cleanupStream();
       E.viewer.classList.remove('fs'); E.btn.classList.remove('on');
-      E.cursor.style.display='none';
+      E.cursor.style.display='none'; hideZoomBar(); E.warp.classList.remove('run');
       E.btn.textContent='✋ Gesture Mode'; E.btn.disabled=false;
-      setState('IDLE'); resetArming(); gDriving=false; onResize();
+      setState('IDLE'); resetArming(); curAction='none'; gVelT=0; gVelP=0; onResize();
     }
     function cleanupStream(){ if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; } if(E.video) E.video.srcObject=null; }
 
@@ -516,7 +639,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
             .then(function(fileset){
               return vision.HandLandmarker.createFromOptions(fileset,{
                 baseOptions:{ modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', delegate:'GPU' },
-                runningMode:'VIDEO', numHands:1
+                runningMode:'VIDEO', numHands:2
               });
             });
         })
@@ -548,13 +671,34 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     /* landmark helpers */
     var LM={ WRIST:0, THUMB:4, INDEX:8, INDEX_PIP:6, MID:12, MID_PIP:10, MID_MCP:9, RING:16, RING_PIP:14, PINKY:20, PINKY_PIP:18 };
     function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
-    function extended(lm,tip,pip){ var w=lm[LM.WRIST]; return dist(lm[tip],w) > dist(lm[pip],w)*1.18; }
+    function extended(lm,tip,pip){ var w=lm[LM.WRIST]; return dist(lm[tip],w) > dist(lm[pip],w)*1.16; }
+    function center(lm){ return { x:(lm[LM.WRIST].x+lm[LM.MID_MCP].x)/2, y:(lm[LM.WRIST].y+lm[LM.MID_MCP].y)/2 }; }
 
     function handleResult(res,t){
-      var lm=res&&res.landmarks&&res.landmarks[0];
-      if(!lm){ if(t-lastSeen>HAND_LOST_MS){ disarm(); E.cursor.style.display='none'; } return; }
+      var hands=(res&&res.landmarks)||[];
+      if(hands.length===0){
+        curAction='none'; E.cursor.style.display='none'; hideZoomBar();
+        if(t-lastSeen>HAND_LOST_MS) disarm();
+        return;
+      }
       lastSeen=t;
 
+      /* ---- TWO-HAND ZOOM (only once armed) ---- */
+      if(hands.length>=2 && STATE==='ARMED'){
+        orbitAnchor=null; wasPinch=false; poseFamily='open';
+        var c0=center(hands[0]), c1=center(hands[1]);
+        var sep=fSep.f(Math.hypot(c0.x-c1.x,c0.y-c1.y),t);
+        var k=clamp((sep-SEP_MIN)/(SEP_MAX-SEP_MIN),0,1);  // 0 together .. 1 apart
+        gTgt.radius=lerp(controls.minDistance,controls.maxDistance,k);
+        curAction='zoom'; E.cursor.style.display='none';
+        showZoomBar(1-k);
+        setAction('zoom');
+        return;
+      }
+      hideZoomBar();
+
+      /* ---- ONE HAND ---- */
+      var lm=hands[0];
       var palmScale=Math.max(0.04, dist(lm[LM.WRIST],lm[LM.MID_MCP]));
       var palm=fPalm.f((lm[LM.WRIST].x+lm[LM.MID_MCP].x)/2,(lm[LM.WRIST].y+lm[LM.MID_MCP].y)/2,t);
       var idx=fIndex.f(lm[LM.INDEX].x,lm[LM.INDEX].y,t);
@@ -564,15 +708,19 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       if(!pinchActive && gap<PINCH_ON) pinchActive=true;
       else if(pinchActive && gap>PINCH_OFF) pinchActive=false;
 
-      var iExt=extended(lm,LM.INDEX,LM.INDEX_PIP),
-          mExt=extended(lm,LM.MID,LM.MID_PIP),
-          rExt=extended(lm,LM.RING,LM.RING_PIP),
-          pExt=extended(lm,LM.PINKY,LM.PINKY_PIP);
-      var othersUp=(mExt?1:0)+(rExt?1:0)+(pExt?1:0);
+      var othersUp=(extended(lm,LM.MID,LM.MID_PIP)?1:0)+(extended(lm,LM.RING,LM.RING_PIP)?1:0)+(extended(lm,LM.PINKY,LM.PINKY_PIP)?1:0);
+      var iExt=extended(lm,LM.INDEX,LM.INDEX_PIP);
       var openPalm=iExt && othersUp>=2 && !pinchActive;
+
+      /* pose-family debounce: only switch open<->point after N consistent frames */
+      var raw=(othersUp>=2)?'open':'point';
+      if(raw===poseFamily){ poseCand=null; poseCandN=0; }
+      else { if(raw===poseCand) poseCandN++; else { poseCand=raw; poseCandN=1; }
+             if(poseCandN>=POSE_DEBOUNCE){ poseFamily=raw; poseCand=null; poseCandN=0; } }
 
       /* ---- arming gate ---- */
       if(STATE!=='ARMED'){
+        curAction='none'; E.hudAct.textContent='';
         if(openPalm){
           if(!armAnchor){ armAnchor={x:palm.x,y:palm.y}; armAccum=0; lastArmT=t; setState('ARMING'); }
           var drift=Math.hypot(palm.x-armAnchor.x,palm.y-armAnchor.y);
@@ -587,26 +735,19 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
         return;
       }
 
-      /* ---- ARMED: choose an action ---- */
+      /* ---- ARMED: orbit (open hand) or cursor/select (pointing) ---- */
       var action='none';
-      if(othersUp>=2){
-        if(!zoomLatched && pinchActive){ zoomLatched=true; zoomAnchor={ gap:gap, radius:gSph?gSph.radius:controls.maxDistance }; }
-        else if(zoomLatched && gap>ZOOM_EXIT){ zoomLatched=false; zoomAnchor=null; }
-        if(zoomLatched){
-          action='zoom';
-          var ratio=clamp(zoomAnchor.gap/Math.max(gap,0.05),0.4,2.6);
-          gTgt.radius=clamp(zoomAnchor.radius*ratio, controls.minDistance, controls.maxDistance);
-          orbitAnchor=null;
-        } else {
+      if(poseFamily==='open'){
+        E.cursor.style.display='none'; wasPinch=false;
+        if(pinchActive){ action='none'; orbitAnchor=null; }   // closed/ambiguous → let momentum coast
+        else {
           action='orbit';
-          if(!orbitAnchor) orbitAnchor={ hx:palm.x, hy:palm.y, theta:gSph.theta, phi:gSph.phi };
+          if(!orbitAnchor) orbitAnchor={ hx:palm.x, hy:palm.y, theta:gSph.theta, phi:gSph.phi };  // grab = catch
           gTgt.theta=orbitAnchor.theta+(orbitAnchor.hx-palm.x)*ORBIT_GAIN;   // mirror X
-          gTgt.phi=clamp(orbitAnchor.phi+(palm.y-orbitAnchor.hy)*ORBIT_GAIN, 0.32, Math.PI-0.32);
+          gTgt.phi=clamp(orbitAnchor.phi+(palm.y-orbitAnchor.hy)*ORBIT_GAIN, 0.20, Math.PI-0.20);
         }
-        E.cursor.classList.remove('pinch');
-        wasPinch=false;
       } else {
-        orbitAnchor=null; zoomLatched=false; zoomAnchor=null;
+        orbitAnchor=null;
         action='cursor';
         moveCursor(idx);
         E.cursor.classList.toggle('pinch', pinchActive);
@@ -614,7 +755,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
         wasPinch=pinchActive;
       }
 
-      gDriving=(action==='orbit'||action==='zoom');
+      curAction=action;
       setAction(action);
     }
 
@@ -629,6 +770,44 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       E.cursor.style.background=hit?'rgba(255,182,39,.18)':'transparent';
       setTimeout(function(){ E.cursor.style.background=''; },160);
     }
+    function showZoomBar(level){ E.zoombar.classList.add('show'); E.zoomfill.style.height=(clamp(level,0,1)*100).toFixed(0)+'%'; }
+    function hideZoomBar(){ E.zoombar.classList.remove('show'); }
+
+    /* ---- physics-aware camera tick, called from the main render loop ---- */
+    function applyCam(){ camera.position.setFromSpherical(gSph).add(controls.target); camera.lookAt(controls.target); }
+    gTick=function(){
+      if(!gestureOn && !intro) return false;        // gesture off → let mouse/touch run
+      if(!gSph) gSyncFromCamera();
+      if(controls) controls.enabled=false;
+
+      if(intro){                                    // entering-3D-space dolly
+        var k=clamp((now()-intro.t)/intro.dur,0,1), e=1-Math.pow(1-k,3);
+        gSph.radius=lerp(intro.r0,intro.r1,e);
+        gSph.theta=lerp(intro.th0,intro.th1,e);
+        gSph.phi=lerp(intro.ph0,intro.ph1,e);
+        applyCam(); if(k>=1) intro=null; return true;
+      }
+
+      if(curAction==='orbit'){                      // active drive → track velocity for the fling
+        var pT=gSph.theta, pP=gSph.phi;
+        gSph.theta+=(gTgt.theta-gSph.theta)*0.30;
+        gSph.phi  +=(gTgt.phi  -gSph.phi  )*0.30;
+        gVelT=gSph.theta-pT; gVelP=gSph.phi-pP;
+      } else if(curAction==='zoom'){                // two-hand zoom drives radius only
+        gSph.theta+=gVelT; gVelT*=0.90; gVelP=0;
+      } else {                                      // flywheel + gentle pre-arm drift
+        if(STATE!=='ARMED') gSph.theta+=IDLE_SPIN;
+        gSph.theta+=gVelT; gSph.phi+=gVelP;
+        var dec=(curAction==='cursor'||curAction==='select')?0.80:0.96;
+        gVelT*=dec; gVelP*=0.88;
+        if(Math.abs(gVelT)<0.00003) gVelT=0;
+        if(Math.abs(gVelP)<0.00003) gVelP=0;
+      }
+      gSph.radius+=(gTgt.radius-gSph.radius)*0.18;
+      gSph.phi=clamp(gSph.phi,0.16,Math.PI-0.16);
+      gSph.makeSafe(); applyCam();
+      return true;
+    };
 
     /* state machine helpers */
     function legendRows(){ return E.legend?E.legend.querySelectorAll('.g-row'):[]; }
@@ -643,10 +822,10 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       if(s==='ARMING') highlightLegend('arm');
       else if(s==='IDLE') highlightLegend(null);
     }
-    function setAction(a){ E.hudAct.textContent = a==='none'?'':'· '+a.toUpperCase(); highlightLegend(a); }
+    function setAction(a){ E.hudAct.textContent = a==='none'?'':'· '+a.toUpperCase(); highlightLegend(a==='select'?'select':a); }
     function resetArming(){ armAnchor=null; armAccum=0; E.calibFill.style.height='0%'; if(STATE==='ARMING') setState('IDLE'); }
-    function arm(){ setState('ARMED'); E.calibLabel.textContent='Tracking armed'; orbitAnchor=null; zoomLatched=false; zoomAnchor=null; wasPinch=false; }
-    function disarm(){ if(STATE!=='IDLE') setState('IDLE'); resetArming(); gDriving=false; setAction('none'); }
+    function arm(){ setState('ARMED'); E.calibLabel.textContent='Tracking armed'; orbitAnchor=null; wasPinch=false; poseFamily='open'; }
+    function disarm(){ if(STATE!=='IDLE') setState('IDLE'); resetArming(); curAction='none'; setAction('none'); }
 
     window.addEventListener('pagehide', function(){ if(gestureOn) exitGesture(); });
   })();
@@ -662,7 +841,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   window.__toggleNav=function(){var n=document.querySelector('.nav-links');if(n)n.classList.toggle('open');};
   setTheme('dark');
   var page=(location.pathname.split('/').pop()||'index.html');
-  var links=[['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['learn.html','Learn'],['explorer.html','Rockets'],['gesture.html','Hands-Free'],['about.html','About']];
+  var links=[['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['learn.html','Learn'],['explorer.html','Rockets'],['about.html','About']];
   var nl=links.map(function(l){var a=(l[0]===page)?' class="active"':'';return '<a href="'+l[0]+'"'+a+'>'+l[1]+'</a>';}).join('');
   var h=document.getElementById('site-header');
   if(h)h.outerHTML='<nav class="nav"><div class="nav-inner"><a class="brand" href="index.html">🚀 <span class="blink"></span> LIVE LAUNCHPAD</a><div class="nav-links">'+nl+'</div><button class="nav-toggle" onclick="__toggleNav()" aria-label="Menu">☰</button><button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">☾</button></div></nav>';

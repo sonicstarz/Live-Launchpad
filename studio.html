@@ -513,7 +513,7 @@ document.querySelectorAll('.mtab').forEach(function(b){ b.onclick=function(){
   var page=(location.pathname.split('/').pop()||'index.html');
   var links=[
     ['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],
-    ['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['learn.html','Learn'],['explorer.html','Rockets'],['gesture.html','Hands-Free'],['about.html','About']
+    ['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['learn.html','Learn'],['explorer.html','Rockets'],['about.html','About']
   ];
   var navlinks=links.map(function(l){
     var active=(l[0]===page)?' class="active"':'';
