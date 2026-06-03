@@ -103,18 +103,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   </section>
   <section class="section">
     <div class="status-bar"><span class="live-dot"></span><span id="dataStatus">Loading live launch data&hellip;</span></div>
-    <div class="next-hero" id="nextHero" style="display:none">
-      <div class="nh-label">&#9673; Next launch &mdash; T-minus</div>
-      <div class="nh-name" id="nhName">&mdash;</div>
-      <div class="nh-meta" id="nhMeta">&mdash;</div>
-      <div class="cd-clock" id="nhClock">
-        <div class="cd-unit"><div class="cd-num" id="cd-d">--</div><div class="cd-u">days</div></div>
-        <div class="cd-unit"><div class="cd-num" id="cd-h">--</div><div class="cd-u">hrs</div></div>
-        <div class="cd-unit"><div class="cd-num" id="cd-m">--</div><div class="cd-u">min</div></div>
-        <div class="cd-unit"><div class="cd-num" id="cd-s">--</div><div class="cd-u">sec</div></div>
-      </div>
-      <a href="watch.html" style="display:inline-flex;align-items:center;gap:6px;margin-top:16px;background:var(--amber);color:#1a1205;font-family:var(--mono);font-weight:700;font-size:12px;padding:9px 16px;border-radius:8px;text-decoration:none;text-transform:uppercase;letter-spacing:.05em">▶ Watch live</a>
-    </div>
+    <div data-ll-countdown style="margin-bottom:24px"></div>
     <div class="filters" id="filters">
       <button class="filt on" data-f="all">All</button>
       <button class="filt" data-f="SpaceX">SpaceX</button>
@@ -151,15 +140,6 @@ function renderList(){
     return '<div class="launch">'+img+'<div class="launch-body"><div class="launch-name">'+(l.name||l.mission||'Unknown mission')+'</div><div class="launch-meta">'+[l.provider,l.pad,l.location].filter(Boolean).join(' \u00B7 ')+(l.orbit&&l.orbit!=='N/A'?' \u00B7 '+l.orbit:'')+'</div><div class="launch-tags"><span class="tag '+sc+'">'+(l.status||'TBD')+'</span>'+(l.missionType?'<span class="tag prov">'+l.missionType+'</span>':'')+((l.vidURLs&&l.vidURLs.length&&l.vidURLs[0].url)?'<a class="ll-link" href="'+l.vidURLs[0].url+'" target="_blank" rel="noopener">▶ Watch</a>':'')+(l.infoURL?'<a class="ll-link" href="'+l.infoURL+'" target="_blank" rel="noopener">↗ Details</a>':'')+'</div></div><div class="launch-when">'+relTime(l.net)+'<small>'+localDate(l.net)+'</small></div></div>';
   }).join('');
 }
-function setNextHero(){
-  const upcoming=ALL.filter(l=>new Date(l.net)>new Date()).sort((a,b)=>new Date(a.net)-new Date(b.net));
-  const next=upcoming[0]||ALL[0];if(!next)return;
-  document.getElementById('nextHero').style.display='block';
-  document.getElementById('nhName').textContent=next.name||next.mission;
-  document.getElementById('nhMeta').textContent=[next.provider,next.pad,next.location].filter(Boolean).join(' \u00B7 ')+' \u00B7 status: '+(next.status||'TBD');
-  function tick(){const c=fmtCountdown(next.net),p=n=>String(n).padStart(2,'0');document.getElementById('cd-d').textContent=p(c.d);document.getElementById('cd-h').textContent=p(c.h);document.getElementById('cd-m').textContent=p(c.m);document.getElementById('cd-s').textContent=p(c.s);}
-  tick();clearInterval(window.__cd);window.__cd=setInterval(tick,1000);
-}
 async function load(){
   try{
     const r=await fetch('/.netlify/functions/launches?kind=upcoming&limit=15');
@@ -168,7 +148,7 @@ async function load(){
     if(!data.results||!data.results.length)throw new Error('empty');
     ALL=data.results;document.getElementById('dataStatus').textContent='Live \u00B7 '+ALL.length+' upcoming launches';
   }catch(e){ALL=FALLBACK;document.getElementById('dataStatus').textContent='Cached snapshot \u00B7 live feed unavailable';}
-  setNextHero();renderList();
+  renderList();
 }
 document.getElementById('filters').addEventListener('click',function(e){if(e.target.classList.contains('filt')){document.querySelectorAll('.filt').forEach(b=>b.classList.remove('on'));e.target.classList.add('on');filter=e.target.dataset.f;renderList();}});
 load();
@@ -191,5 +171,6 @@ load();
   var c=document.getElementById('stars');if(c){var s='';for(var i=0;i<70;i++){var z=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);s+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+z+'px;height:'+z+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=s;}
 })();
 </script>
+<script src="ll-countdown.js" defer></script>
 </body>
 </html>
