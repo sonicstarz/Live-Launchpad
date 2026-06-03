@@ -54,6 +54,7 @@ body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-weight:3
 .tcell .tl{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);margin-top:3px}
 .telem-note{font-family:var(--mono);font-size:11px;color:var(--txt3);margin:2px 0 18px}
 .sim{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:#1a1205;background:var(--amber);border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:700}
+.sim.live{background:var(--green);color:#04130a}
 @media(max-width:640px){.telem{grid-template-columns:repeat(2,1fr)}}
 /* coverage feeds */
 .sec-head{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--txt);font-weight:700;display:flex;align-items:center;gap:10px;margin:24px 0 12px;flex-wrap:wrap}
@@ -109,7 +110,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       <div class="tcell"><div class="tv" id="t-eng">—</div><div class="tl">Engines</div></div>
       <div class="tcell"><div class="tv" id="t-down">—</div><div class="tl">Downrange km</div></div>
     </div>
-    <div class="telem-note">Telemetry <span class="sim">SIM</span> — simulated placeholder. Live values need the OCR pipeline (separate backend project).</div>
+    <div class="telem-note" id="telem-note">Telemetry <span class="sim">SIM</span> — simulated placeholder until a launch is being read live.</div>
   </div>
 
   <div class="sec-head"><span class="idx">02</span> Coverage Feeds
@@ -135,6 +136,10 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     {id:'lab',     name:'LabPadre (Starbase cams)', channel:'UCFwMITSkc1Fms6PoJoh1OUQ', site:'https://labpadre.com'}
   ];
   var layout='single', soloId=null, launch=null;
+  /* live telemetry from the OCR pipeline (Supabase public read; falls back to SIM) */
+  var TELE_URL='https://oshizhnblnsrjutxyxxg.supabase.co/rest/v1/telemetry';
+  var TELE_KEY='sb_publishable_QMaIcq2mO6q5qbE-5gT14A_Q-2dKT5r';
+  var liveTelem=null;
   var el=function(id){return document.getElementById(id);};
   var pad=function(n){return String(n).padStart(2,'0');};
   var esc=function(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});};
@@ -199,7 +204,21 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       setTelem(t);
     }
   }
+  function setTelemBadge(live){
+    var n=el('telem-note'); if(!n)return;
+    n.innerHTML='Telemetry <span class="sim'+(live?' live':'')+'">'+(live?'LIVE':'SIM')+'</span> — '+(live?'read live off the webcast.':'simulated placeholder until a launch is being read live.');
+  }
   function setTelem(tplus){
+    if(liveTelem){ // real values from the OCR pipeline take over whenever fresh data exists
+      var v=liveTelem;
+      el('t-vel').textContent=v.velocity_kmh!=null?Number(v.velocity_kmh).toLocaleString():'—';
+      el('t-alt').textContent=v.altitude_km!=null?v.altitude_km:'—';
+      el('t-stage').textContent=v.stage||'—';
+      el('t-eng').textContent=v.engines||'—';
+      el('t-down').textContent=v.downrange_km!=null?v.downrange_km:'—';
+      setTelemBadge(true); return;
+    }
+    setTelemBadge(false);
     if(tplus==null||tplus>600){ ['t-vel','t-alt','t-stage','t-eng','t-down'].forEach(function(id){el(id).textContent='—';}); return; }
     // simulated illustrative profile (NOT real telemetry)
     var vel=Math.min(28000, Math.round(tplus*tplus*0.9));
@@ -210,12 +229,20 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     el('t-vel').textContent=vel.toLocaleString(); el('t-alt').textContent=alt;
     el('t-stage').textContent=stage; el('t-eng').textContent=eng; el('t-down').textContent=down;
   }
+  async function pollTelem(){
+    try{
+      var r=await fetch(TELE_URL+'?select=*&order=created_at.desc&limit=1',{headers:{apikey:TELE_KEY,Authorization:'Bearer '+TELE_KEY}});
+      if(r.ok){ var rows=await r.json(); var row=rows&&rows[0];
+        liveTelem=(row && (Date.now()-new Date(row.created_at).getTime()<25000)) ? row : null; }
+    }catch(e){ /* keep SIM fallback */ }
+  }
 
   async function load(){
     var L=null;
     try{ var r=await fetch('/.netlify/functions/launches?kind=upcoming&limit=1'); if(r.ok){ var d=await r.json(); L=(d.results||[])[0]; } }catch(e){}
     if(!L){ L={name:'Next Launch (feed unavailable)',net:new Date(Date.now()+2*86400000).toISOString(),provider:'—',pad:'—',location:'',webcastLive:false,vidURLs:[]}; }
     applyLaunch(L); tick(); setInterval(tick,1000);
+    pollTelem(); setInterval(pollTelem,2500);
   }
   load();
 })();
