@@ -310,6 +310,8 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script>
 /* ===== 3D ROCKET EXPLORER ===== */
 (function(){
@@ -589,22 +591,59 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
 
   function clearRocket(){ if(rocketGroup){ scene.remove(rocketGroup); rocketGroup.traverse(function(o){ if(o.geometry)o.geometry.dispose(); if(o.material)o.material.dispose(); }); } rocketGroup=null; selectable=[]; selectedKey=null; }
 
+  function viewerMsg(t){ var n=document.getElementById('gToast'); if(!n)return; n.textContent=t; n.style.display='block'; clearTimeout(viewerMsg._t); viewerMsg._t=setTimeout(function(){n.style.display='none';},4500); }
+  function frameCamera(cx,cy,cz,hgt){
+    controls.target.set(cx,cy,cz);
+    controls.minDistance=hgt*0.42; controls.maxDistance=hgt*2.4;
+    var dist=hgt*1.18;
+    camera.position.set(cx+dist*0.5, cy+hgt*0.14, cz+dist*0.92);
+    camera.far=Math.max(500,hgt*7); camera.updateProjectionMatrix();
+    camera.lookAt(controls.target); gSyncFromCamera();
+  }
+  function gnorm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+
   function buildRocket(slug){
     clearRocket();
+    if(current && current.model_kind==='glb' && current.model_url) buildGLB(current);
+    else buildProcedural(slug);
+  }
+  function buildProcedural(slug){
     var builder=BUILDERS[slug];
     rocketGroup = builder? builder() : BUILDERS.starship();
     scene.add(rocketGroup);
     rocketGroup.traverse(function(o){ if(o.isMesh){ o.userData._mat=o.material; selectable.push(o); } });
-    // frame the camera to whatever size this rocket is
     var box=new THREE.Box3().setFromObject(rocketGroup);
     var c=box.getCenter(new THREE.Vector3()), size=box.getSize(new THREE.Vector3());
-    var hgt=Math.max(size.y, size.x*1.6, 18);
-    controls.target.set(0,c.y,0);
-    controls.minDistance=hgt*0.42; controls.maxDistance=hgt*2.4;
-    var dist=hgt*1.18;
-    camera.position.set(dist*0.5, c.y+hgt*0.14, dist*0.92);
-    camera.far=Math.max(500,hgt*7); camera.updateProjectionMatrix();
-    camera.lookAt(controls.target);
+    frameCamera(0,c.y,0, Math.max(size.y, size.x*1.6, 18));
+  }
+  function buildGLB(rk){
+    var ld=el('vload'); if(ld){ ld.style.display='grid'; ld.textContent='◌ Loading 3D model…'; }
+    var loader=new THREE.GLTFLoader();
+    try{ if(THREE.DRACOLoader){ var d=new THREE.DRACOLoader(); d.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/'); loader.setDRACOLoader(d); } }catch(e){}
+    var url=rk.model_url, slug=rk.slug;
+    loader.load(url, function(gltf){
+      if(current!==rk){ return; }  // user switched away mid-load
+      var root=gltf.scene||(gltf.scenes&&gltf.scenes[0]); if(!root){ buildProcedural(slug); if(ld)ld.style.display='none'; return; }
+      // normalise scale to ~28 units tall, recenter (base at y=0, centred on x/z)
+      var box=new THREE.Box3().setFromObject(root), size=box.getSize(new THREE.Vector3());
+      root.scale.setScalar(28/(size.y||1)); root.updateMatrixWorld(true);
+      box.setFromObject(root); var c=box.getCenter(new THREE.Vector3());
+      root.position.x-=c.x; root.position.z-=c.z; root.position.y-=box.min.y; root.updateMatrixWorld(true);
+      // map glb node names -> part mesh_key for click-select + highlight
+      var keys={}; partsOf().forEach(function(p){ if(p.mesh_key) keys[gnorm(p.mesh_key)]=p.mesh_key; });
+      var matched=0;
+      root.traverse(function(o){ var nn=gnorm(o.name); if(nn&&keys[nn]){ matched++; o.traverse(function(ch){ ch.userData.meshKey=keys[nn]; }); } });
+      rocketGroup=root; scene.add(root);
+      selectable=[]; root.traverse(function(o){ if(o.isMesh) selectable.push(o); });
+      box.setFromObject(root); var sz=box.getSize(new THREE.Vector3()), c2=box.getCenter(new THREE.Vector3());
+      frameCamera(0,c2.y,0, Math.max(sz.y,12));
+      if(ld) ld.style.display='none';
+      if(!matched && partsOf().length) viewerMsg('Model loaded — but no parts are mapped yet. Set each part’s “mesh key” to a node name in the model.');
+    }, undefined, function(err){
+      if(ld) ld.style.display='none';
+      viewerMsg('Couldn’t load that model — showing the built-in version instead.');
+      buildProcedural(slug);
+    });
   }
 
   function highlight(meshKey){
