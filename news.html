@@ -47,6 +47,20 @@ h1{font-weight:900;font-size:clamp(32px,6vw,56px);line-height:1;letter-spacing:-
 .section{margin:40px 0}
 .status-bar{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--txt3);margin-bottom:20px;flex-wrap:wrap}
 .status-bar .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+.ai-summary{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:22px;position:relative;overflow:hidden;display:none}
+.ai-summary.show{display:block}
+.ai-summary::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--amber);opacity:.7}
+.ais-head{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--txt);font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+.ais-head .idx{color:var(--amber)}
+.ais-badge{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:#1a1205;background:var(--amber);border-radius:4px;padding:2px 6px;font-weight:700}
+.ais-date{font-family:var(--mono);font-size:11px;color:var(--txt3);margin-bottom:12px}
+.ais-headline{font-size:clamp(18px,3vw,24px);font-weight:700;letter-spacing:-.01em;margin-bottom:12px}
+.ais-items{list-style:none;display:flex;flex-direction:column;gap:9px}
+.ais-items li{font-size:14px;color:var(--txt2);line-height:1.55;padding-left:16px;position:relative}
+.ais-items li::before{content:"▸";position:absolute;left:0;color:var(--amber)}
+.ais-items a{color:var(--amber);text-decoration:none;font-family:var(--mono);font-size:12px;white-space:nowrap}
+.ais-items a:hover{text-decoration:underline}
+.ais-foot{font-family:var(--mono);font-size:10px;color:var(--txt3);margin-top:12px;border-top:1px solid var(--line);padding-top:10px;line-height:1.5}
 .news-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 .article{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;text-decoration:none;color:inherit;display:flex;flex-direction:column;transition:border-color .2s,transform .2s}
 .article:hover{border-color:var(--line2);transform:translateY(-2px)}
@@ -76,6 +90,13 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   </section>
   <section class="section">
     <div class="status-bar"><span class="live-dot"></span><span id="dataStatus">Loading latest headlines&hellip;</span></div>
+    <section class="ai-summary" id="aiSummary">
+      <div class="ais-head"><span class="idx">01</span> Today in Space <span class="ais-badge">&#10022; AI-GENERATED</span></div>
+      <div class="ais-date" id="aisDate"></div>
+      <h2 class="ais-headline" id="aisHeadline"></h2>
+      <ul class="ais-items" id="aisItems"></ul>
+      <div class="ais-foot">This briefing is an <b>AI-generated</b> summary of the day's headlines below. Every point links to its original source &mdash; always read the source for the full story.</div>
+    </section>
     <div class="news-grid" id="grid"><div class="loading">&#8635; Fetching news&hellip;</div></div>
     <div class="note"><b>Live data</b> from The Space Devs' Spaceflight News API, aggregating dozens of sources. Articles link out to their original publishers. If the live feed is unavailable, recent headlines are shown.</div>
   </section>
@@ -99,6 +120,21 @@ function render(items){
     return '<a class="article" href="'+a.url+'" target="_blank" rel="noopener">'+img+'<div class="article-body"><div class="article-site">'+(a.news_site||'Space')+'</div><div class="article-title">'+a.title+'</div><div class="article-sum">'+((a.summary||'').slice(0,140)+((a.summary||'').length>140?'\u2026':''))+'</div><div class="article-date">'+timeAgo(a.published_at)+'</div></div></a>';
   }).join('');
 }
+var SB_URL='https://oshizhnblnsrjutxyxxg.supabase.co';
+var SB_KEY='sb_publishable_QMaIcq2mO6q5qbE-5gT14A_Q-2dKT5r';
+function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
+async function loadSummary(){
+  try{
+    var r=await fetch(SB_URL+'/rest/v1/news_summary?select=*&order=generated_at.desc&limit=1',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});
+    if(!r.ok)return; var rows=await r.json(); var s=rows&&rows[0];
+    if(!s||!s.items||!s.items.length)return;
+    document.getElementById('aisHeadline').textContent=s.headline||'Today in Space';
+    var t=''; try{t=new Date(s.generated_at).toUTCString().slice(17,22);}catch(e){}
+    document.getElementById('aisDate').textContent='Updated '+t+' UTC · '+(s.article_count||s.items.length)+' sources';
+    document.getElementById('aisItems').innerHTML=s.items.map(function(it){return '<li>'+esc(it.text)+' <a href="'+esc(it.source_url)+'" target="_blank" rel="noopener">'+esc(it.source_site||'source')+' ↗</a></li>';}).join('');
+    document.getElementById('aiSummary').classList.add('show');
+  }catch(e){}
+}
 async function load(){
   try{
     const r=await fetch('https://api.spaceflightnewsapi.net/v4/articles/?limit=15');
@@ -112,7 +148,7 @@ async function load(){
     document.getElementById('dataStatus').textContent='Recent headlines \u00B7 live feed unavailable';
   }
 }
-load();
+load(); loadSummary();
 </script>
 <script>
 (function(){
