@@ -84,6 +84,30 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
 .vid-thumb{position:relative}
 .vid-thumb .play{position:absolute;inset:0;margin:auto;width:46px;height:46px;display:grid;place-items:center;background:rgba(6,10,18,.55);border:1px solid rgba(255,255,255,.55);border-radius:50%;color:#fff;font-size:15px;backdrop-filter:blur(2px)}
 .article:hover .vid-thumb .play{background:var(--amber);color:#1a1205;border-color:var(--amber)}
+/* featured hero video */
+.vid-featured{display:grid;grid-template-columns:1.7fr 1fr;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:20px;cursor:pointer;transition:border-color .2s}
+.vid-featured:hover{border-color:var(--amber)}
+.vid-featured .vthumb{position:relative;background:#06101c;min-height:200px}
+.vid-featured .vthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.vid-featured .vthumb .play{position:absolute;inset:0;margin:auto;width:64px;height:64px;display:grid;place-items:center;background:rgba(6,10,18,.55);border:1px solid rgba(255,255,255,.6);border-radius:50%;color:#fff;font-size:22px;transition:all .2s}
+.vid-featured:hover .vthumb .play{background:var(--amber);color:#1a1205;border-color:var(--amber)}
+.vid-featured .vbody{padding:22px;display:flex;flex-direction:column;justify-content:center}
+.vf-tag{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+.vf-title{font-size:clamp(18px,2.4vw,24px);font-weight:800;line-height:1.22;margin-bottom:8px}
+.vf-meta{font-family:var(--mono);font-size:12px;color:var(--txt3)}
+@media(max-width:680px){.vid-featured{grid-template-columns:1fr}}
+/* inline player lightbox */
+.vmodal{position:fixed;inset:0;z-index:500;background:rgba(4,6,12,.88);display:none;align-items:center;justify-content:center;padding:20px}
+.vmodal.open{display:flex}
+.vmodal-box{width:min(920px,100%)}
+.vframe{position:relative;width:100%;aspect-ratio:16/9;background:#000;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+.vframe iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vmodal-bar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:12px}
+.vmodal-bar .vt{font-size:14px;color:var(--txt);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vmodal-bar .vactions{display:flex;align-items:center;gap:12px;flex:none}
+.vmodal-bar a{color:var(--amber);text-decoration:none;font-family:var(--mono);font-size:12px;white-space:nowrap}
+.vmodal-x{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);border-radius:8px;padding:8px 12px;cursor:pointer;font-family:var(--mono);font-size:12px}
+.vmodal-x:hover{color:var(--amber);border-color:var(--amber)}
 </style>
 </head>
 <body>
@@ -118,9 +142,19 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
 
   <section class="section" id="view-videos" hidden>
     <div class="status-bar"><span class="live-dot"></span><span id="vidStatus">Loading latest videos&hellip;</span></div>
+    <div id="vidFeatured"></div>
     <div class="news-grid" id="videoGrid"><div class="loading">&#8635; Fetching videos&hellip;</div></div>
     <div class="note"><b>Curated feed</b> &mdash; the newest uploads from hand-picked space channels (SpaceX, NASA, Everyday Astronaut, NASASpaceflight, Spaceflight Now), via their public YouTube RSS. Tap any video to watch on YouTube and support the creator.</div>
   </section>
+</div>
+<div class="vmodal" id="videoModal">
+  <div class="vmodal-box">
+    <div class="vframe" id="vframe"></div>
+    <div class="vmodal-bar">
+      <span class="vt" id="vmTitle"></span>
+      <span class="vactions"><a id="vmYt" href="#" target="_blank" rel="noopener">YouTube ↗</a><button class="vmodal-x" id="vmClose">✕ Close</button></span>
+    </div>
+  </div>
 </div>
 <div id="site-footer"></div>
 <script>
@@ -173,23 +207,46 @@ load(); loadSummary();
 
 /* ----- Videos tab (curated YouTube RSS via the videos function) ----- */
 var videosLoaded=false;
+function vidCard(v){
+  return '<a class="article" href="'+esc(v.url)+'" target="_blank" rel="noopener" data-vid="'+esc(v.videoId)+'" data-title="'+esc(v.title)+'">'
+    +'<div class="vid-thumb"><img class="article-img" src="'+esc(v.thumb)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'"><span class="play">&#9654;</span></div>'
+    +'<div class="article-body"><div class="article-site">'+esc(v.channel)+'</div><div class="article-title">'+esc(v.title)+'</div><div class="article-date">'+timeAgo(v.published)+'</div></div></a>';
+}
+function wirePlay(scope){
+  scope.querySelectorAll('[data-vid]').forEach(function(el){
+    el.addEventListener('click',function(e){ e.preventDefault(); openPlayer(el.getAttribute('data-vid'), el.getAttribute('data-title'), el.getAttribute('href')); });
+  });
+}
 async function loadVideos(){
-  var g=document.getElementById('videoGrid'), st=document.getElementById('vidStatus');
+  var g=document.getElementById('videoGrid'), st=document.getElementById('vidStatus'), feat=document.getElementById('vidFeatured');
   try{
-    var r=await fetch('/.netlify/functions/videos?limit=48');
+    var r=await fetch('/.netlify/functions/videos?limit=60');
     if(!r.ok)throw 0; var d=await r.json();
     if(!d.results||!d.results.length)throw 0;
-    g.innerHTML=d.results.map(function(v){
-      return '<a class="article" href="'+esc(v.url)+'" target="_blank" rel="noopener">'
-        +'<div class="vid-thumb"><img class="article-img" src="'+esc(v.thumb)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'"><span class="play">&#9654;</span></div>'
-        +'<div class="article-body"><div class="article-site">'+esc(v.channel)+'</div><div class="article-title">'+esc(v.title)+'</div><div class="article-date">'+timeAgo(v.published)+'</div></div></a>';
-    }).join('');
+    var top=d.results[0], rest=d.results.slice(1);
+    feat.innerHTML='<div class="vid-featured" data-vid="'+esc(top.videoId)+'" data-title="'+esc(top.title)+'">'
+      +'<div class="vthumb"><img src="https://i.ytimg.com/vi/'+esc(top.videoId)+'/maxresdefault.jpg" alt="" onerror="this.onerror=null;this.src=\''+esc(top.thumb)+'\'"><span class="play">&#9654;</span></div>'
+      +'<div class="vbody"><div class="vf-tag">▸ Latest drop</div><div class="vf-title">'+esc(top.title)+'</div><div class="vf-meta">'+esc(top.channel)+' · '+timeAgo(top.published)+'</div></div></div>';
+    g.innerHTML=rest.map(vidCard).join('');
+    wirePlay(feat); wirePlay(g);
     if(st)st.textContent='Latest · '+d.results.length+' videos from curated space channels';
   }catch(e){
-    g.innerHTML='<div class="loading">Couldn’t load videos right now — try again shortly.</div>';
+    feat.innerHTML=''; g.innerHTML='<div class="loading">Couldn’t load videos right now — try again shortly.</div>';
     if(st)st.textContent='Video feed unavailable';
   }
 }
+/* inline player lightbox */
+function openPlayer(vid,title,url){
+  if(!vid)return;
+  document.getElementById('vframe').innerHTML='<iframe src="https://www.youtube.com/embed/'+vid+'?autoplay=1&rel=0&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
+  document.getElementById('vmTitle').textContent=title||'';
+  document.getElementById('vmYt').href=url||('https://www.youtube.com/watch?v='+vid);
+  document.getElementById('videoModal').classList.add('open');
+}
+function closePlayer(){ document.getElementById('videoModal').classList.remove('open'); document.getElementById('vframe').innerHTML=''; }
+document.getElementById('vmClose').onclick=closePlayer;
+document.getElementById('videoModal').addEventListener('click',function(e){ if(e.target===this) closePlayer(); });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') closePlayer(); });
 document.querySelectorAll('.tab').forEach(function(b){ b.onclick=function(){
   var t=b.dataset.tab;
   document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===b);});
