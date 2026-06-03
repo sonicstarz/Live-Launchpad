@@ -412,6 +412,24 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape'&&$('stage').classList.contains('open'))closeStage();
 });
 
+/* Fixed-timestep driver: the simulation always advances at 60Hz no matter the
+   display refresh rate (30 / 60 / 120 Hz) or how loaded the machine is, so games
+   never run at half/double speed. tick()=one sim step, draw()=render once/frame.
+   Returns a stop() function. */
+const SIM_STEP=1000/60;
+function driveLoop(tick,draw){
+  let last=0,acc=0,raf;
+  function frame(ts){
+    raf=requestAnimationFrame(frame);
+    if(!last)last=ts;
+    acc+=Math.min(ts-last,200); last=ts;            // cap catch-up to avoid a spiral after a stall
+    let n=0; while(acc>=SIM_STEP && n<5){ tick(); acc-=SIM_STEP; n++; }
+    draw();
+  }
+  raf=requestAnimationFrame(frame);
+  return function(){ cancelAnimationFrame(raf); };
+}
+
 /* ============ ROCKET SNAKE ============ */
 function openSnake(){
   openStage('ROCKET SNAKE','Arrow keys / swipe to steer · eat the fuel cells · score: 0');
@@ -526,9 +544,10 @@ function startFlappy(){
   const keyHandler=function(e){if(e.key===' '||e.code==='Space'){e.preventDefault();flap();}};
   document.addEventListener('keydown',keyHandler);
   cv.onpointerdown=function(e){e.preventDefault();flap();};
-  function update(){
+  function tick(){
+    if(dead) return;
     t++;
-    if(!started){draw();raf=requestAnimationFrame(update);return;}
+    if(!started) return;
     vy+=GRAV;y+=vy;
     if(t%90===0)addPipe();
     pipes.forEach(function(p){p.x-=2.6;});
@@ -540,17 +559,7 @@ function startFlappy(){
       if(inX&&(y<p.gy||y+SHIP_H>p.gy+p.gap))dead=true;
     });
     if(y+SHIP_H>H||y<0)dead=true;
-    draw();
-    if(dead){
-      ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);
-      ctx.fillStyle='#ff5d5d';ctx.font='20px "Press Start 2P",monospace';ctx.textAlign='center';
-      ctx.fillText('CRASHED',W/2,H/2-10);
-      ctx.fillStyle='#ffb627';ctx.font='10px "Press Start 2P",monospace';ctx.fillText('SCORE '+score,W/2,H/2+20);
-      ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.fillText('SPACE to retry',W/2,H/2+44);
-      LL_onGameOver('flappy',score);
-      return;
-    }
-    raf=requestAnimationFrame(update);
+    if(dead) LL_onGameOver('flappy',score);
   }
   function draw(){
     ctx.fillStyle='#0a1420';ctx.fillRect(0,0,W,H);
@@ -568,11 +577,18 @@ function startFlappy(){
     if(started&&vy<0){ctx.fillStyle='#ff7a3c';ctx.shadowColor='#ffb627';ctx.shadowBlur=14;ctx.fillRect(SHIP_X+SHIP_W/2-2,y+SHIP_H,4,6+Math.random()*5);ctx.shadowBlur=0;}
     starshipSprite(ctx,SHIP_X,y,SHIP_W/5);
     if(!started){ctx.fillStyle='#fff';ctx.font='10px "Press Start 2P",monospace';ctx.textAlign='center';ctx.fillText('SPACE TO FLAP',W/2,H*0.3);}
+    if(dead){
+      ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#ff5d5d';ctx.font='20px "Press Start 2P",monospace';ctx.textAlign='center';
+      ctx.fillText('CRASHED',W/2,H/2-10);
+      ctx.fillStyle='#ffb627';ctx.font='10px "Press Start 2P",monospace';ctx.fillText('SCORE '+score,W/2,H/2+20);
+      ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.fillText('SPACE to retry',W/2,H/2+44);
+    }
   }
-  let raf;
-  function cleanup(){cancelAnimationFrame(raf);document.removeEventListener('keydown',keyHandler);cv.onpointerdown=null;}
+  let stopLoop;
+  function cleanup(){if(stopLoop)stopLoop();document.removeEventListener('keydown',keyHandler);cv.onpointerdown=null;}
   activeCleanup=cleanup;
-  raf=requestAnimationFrame(update);
+  stopLoop=driveLoop(tick,draw);
 }
 
 /* ============ BOOSTER LANDING ============ */
@@ -619,7 +635,7 @@ function startLander(){
   // tapping the canvas also burns (and retries)
   cv.onpointerdown=function(e){e.preventDefault();if(retryOrStart())return;setBurn(true);};
   cv.onpointerup=function(){setBurn(false);};
-  function update(){
+  function tick(){
     t++;
     if(!dead&&!landed){
       vy+=GRAV;
@@ -637,8 +653,6 @@ function startLander(){
       }
     }
     if(landed&&!scored){scored=true;LL_onGameOver('lander',Math.round(fuel));}
-    draw();
-    if(!dead&&!landed)raf=requestAnimationFrame(update);
   }
   function draw(){
     ctx.fillStyle='#060d16';ctx.fillRect(0,0,W,H);
@@ -666,16 +680,16 @@ function startLander(){
     if(landed){ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#3ddc84';ctx.font='18px "Press Start 2P",monospace';ctx.textAlign='center';ctx.fillText('TOUCHDOWN!',W/2,H/2-6);ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.fillText('SPACE / tap to fly again',W/2,H/2+24);}
     if(dead){ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#ff5d5d';ctx.font='18px "Press Start 2P",monospace';ctx.textAlign='center';ctx.fillText('RUD!',W/2,H/2-6);ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.fillText('SPACE / tap to retry',W/2,H/2+24);}
   }
-  let raf;
+  let stopLoop;
   function cleanup(){
-    cancelAnimationFrame(raf);
+    if(stopLoop)stopLoop();
     document.removeEventListener('keydown',kd);document.removeEventListener('keyup',ku);
     cv.onpointerdown=null;cv.onpointerup=null;
     [btnL,btnR,btnB].forEach(function(b){if(b&&b._d){b.removeEventListener('pointerdown',b._d);b.removeEventListener('pointerup',b._u);b.removeEventListener('pointerleave',b._u);b.removeEventListener('pointercancel',b._u);}});
     pad.style.display='none';
   }
   activeCleanup=cleanup;
-  raf=requestAnimationFrame(update);
+  stopLoop=driveLoop(tick,draw);
 }
 
 /* ============ ORBITAL DEBRIS ============ */
@@ -722,38 +736,35 @@ function startOrbital(){
   cv.onpointermove=function(e){if(drag){e.preventDefault();ptr(e);}};
   cv.onpointerup=function(){drag=false;tx=null;ty=null;};
   cv.onpointerleave=function(){drag=false;tx=null;ty=null;};
-  function update(){
+  function tick(){
+    if(dead) return;
     t++;
-    if(!dead){
-      if(drag&&tx!=null){vx+=(tx-px)*0.06;vy+=(ty-py)*0.06;}
-      if(keys['ArrowUp'])vy-=ACC;if(keys['ArrowDown'])vy+=ACC;
-      if(keys['ArrowLeft'])vx-=ACC;if(keys['ArrowRight'])vx+=ACC;
-      vx*=FRICTION;vy*=FRICTION;
-      vx=Math.max(-MAXV,Math.min(MAXV,vx));vy=Math.max(-MAXV,Math.min(MAXV,vy));
-      px+=vx;py+=vy;
-      if(px<SHIP_R){px=SHIP_R;vx=0;}if(px>W-SHIP_R){px=W-SHIP_R;vx=0;}
-      if(py<SHIP_R){py=SHIP_R;vy=0;}if(py>H-SHIP_R){py=H-SHIP_R;vy=0;}
-      // difficulty ramps with time
-      speed=2.4+t/900;
-      spawnEvery=Math.max(20,46-Math.floor(t/240));
-      if(t%spawnEvery===0)spawnDebris();
-      debris.forEach(function(d){d.x+=d.vx;d.y+=d.vy;d.rot+=d.spin;if(d.y<d.r||d.y>H-d.r)d.vy*=-1;});
-      debris=debris.filter(function(d){return d.x>-d.r-20;});
-      if(t%6===0){score++;$('stageInfo').textContent='Arrow keys / drag to steer · dodge the debris · score: '+score;}
-      debris.forEach(function(d){
-        const dx=d.x-px,dy=d.y-py,rr=d.r*0.82+SHIP_R;
-        if(dx*dx+dy*dy<rr*rr)dead=true;
-      });
-    }
-    draw();
-    if(!dead)raf=requestAnimationFrame(update);
-    else{drawOver();LL_onGameOver('orbital',score);}
+    stars.forEach(function(s){s.x-=s.z*0.6;if(s.x<0){s.x=W;s.y=Math.random()*H;}});
+    if(drag&&tx!=null){vx+=(tx-px)*0.06;vy+=(ty-py)*0.06;}
+    if(keys['ArrowUp'])vy-=ACC;if(keys['ArrowDown'])vy+=ACC;
+    if(keys['ArrowLeft'])vx-=ACC;if(keys['ArrowRight'])vx+=ACC;
+    vx*=FRICTION;vy*=FRICTION;
+    vx=Math.max(-MAXV,Math.min(MAXV,vx));vy=Math.max(-MAXV,Math.min(MAXV,vy));
+    px+=vx;py+=vy;
+    if(px<SHIP_R){px=SHIP_R;vx=0;}if(px>W-SHIP_R){px=W-SHIP_R;vx=0;}
+    if(py<SHIP_R){py=SHIP_R;vy=0;}if(py>H-SHIP_R){py=H-SHIP_R;vy=0;}
+    // difficulty ramps with time
+    speed=2.4+t/900;
+    spawnEvery=Math.max(20,46-Math.floor(t/240));
+    if(t%spawnEvery===0)spawnDebris();
+    debris.forEach(function(d){d.x+=d.vx;d.y+=d.vy;d.rot+=d.spin;if(d.y<d.r||d.y>H-d.r)d.vy*=-1;});
+    debris=debris.filter(function(d){return d.x>-d.r-20;});
+    if(t%6===0){score++;$('stageInfo').textContent='Arrow keys / drag to steer · dodge the debris · score: '+score;}
+    debris.forEach(function(d){
+      const dx=d.x-px,dy=d.y-py,rr=d.r*0.82+SHIP_R;
+      if(dx*dx+dy*dy<rr*rr)dead=true;
+    });
+    if(dead) LL_onGameOver('orbital',score);
   }
   function draw(){
     ctx.fillStyle='#060d16';ctx.fillRect(0,0,W,H);
-    // parallax starfield drifting left
-    stars.forEach(function(s){s.x-=s.z*0.6;if(s.x<0){s.x=W;s.y=Math.random()*H;}
-      ctx.fillStyle='rgba(255,255,255,'+(0.2+s.z*0.25)+')';ctx.fillRect(s.x,s.y,s.z,s.z);});
+    // parallax starfield (stepped in tick)
+    stars.forEach(function(s){ ctx.fillStyle='rgba(255,255,255,'+(0.2+s.z*0.25)+')';ctx.fillRect(s.x,s.y,s.z,s.z); });
     debris.forEach(function(d){
       ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.rot);
       if(d.sat){
@@ -777,6 +788,7 @@ function startOrbital(){
     ctx.fillStyle='#7c828c';ctx.fillRect(-SHIP_R+2,-9,4,18);
     ctx.fillStyle='#4d9fff';ctx.beginPath();ctx.arc(2,0,3.2,0,6.283);ctx.fill();
     ctx.restore();
+    if(dead)drawOver();
   }
   function drawOver(){
     ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);
@@ -785,14 +797,14 @@ function startOrbital(){
     ctx.fillStyle='#ffb627';ctx.font='10px "Press Start 2P",monospace';ctx.fillText('SCORE '+score,W/2,H/2+20);
     ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.fillText('SPACE / tap to retry',W/2,H/2+44);
   }
-  let raf;
+  let stopLoop;
   function cleanup(){
-    cancelAnimationFrame(raf);
+    if(stopLoop)stopLoop();
     document.removeEventListener('keydown',kd);document.removeEventListener('keyup',ku);
     cv.onpointerdown=null;cv.onpointermove=null;cv.onpointerup=null;cv.onpointerleave=null;
   }
   activeCleanup=cleanup;
-  raf=requestAnimationFrame(update);
+  stopLoop=driveLoop(tick,draw);
 }
 
 /* ============ STAR SWARM (Galaga-style) ============ */
@@ -843,9 +855,10 @@ function startSwarm(){
   cv.onpointerup=function(){ firing=false; targetX=null; };
   cv.onpointerleave=function(){ firing=false; targetX=null; };
 
-  function update(){
+  function tick(){
+    if(dead) return;
     t++;
-    if(!dead){
+    stars.forEach(function(s){s.y+=s.s*0.4; if(s.y>H){s.y=0;s.x=Math.random()*W;}});
       if(targetX!=null){ const dx=targetX-px; px+=Math.max(-PSPEED*1.5,Math.min(PSPEED*1.5,dx*0.25)); }
       else px+=moveDir*PSPEED;
       px=Math.max(PW/2,Math.min(W-PW/2,px));
@@ -884,9 +897,6 @@ function startSwarm(){
       }
 
       if(aliveCount===0){ if(!clearAt)clearAt=t; if(t-clearAt>45){ wave++; spawnWave(); clearAt=0; invuln=Math.max(invuln,40); } }
-    }
-    draw();
-    if(!dead)raf=requestAnimationFrame(update); else drawOver();
   }
 
   function drawShip(){
@@ -903,7 +913,7 @@ function startSwarm(){
   }
   function draw(){
     ctx.fillStyle='#060d16';ctx.fillRect(0,0,W,H);
-    stars.forEach(function(s){s.y+=s.s*0.4; if(s.y>H){s.y=0;s.x=Math.random()*W;} ctx.fillStyle='rgba(255,255,255,'+(0.2+s.s*0.3)+')';ctx.fillRect(s.x,s.y,s.s,s.s);});
+    stars.forEach(function(s){ ctx.fillStyle='rgba(255,255,255,'+(0.2+s.s*0.3)+')';ctx.fillRect(s.x,s.y,s.s,s.s);});
     enemies.forEach(function(en){if(en.alive)drawEnemy(en);});
     ctx.fillStyle='#ffe9b0';bullets.forEach(function(b){ctx.fillRect(b.x-1.5,b.y-7,3,9);});
     ctx.fillStyle='#ff5d5d';ebullets.forEach(function(b){ctx.fillRect(b.x-1.5,b.y,3,8);});
@@ -911,6 +921,7 @@ function startSwarm(){
     ctx.font='10px "Press Start 2P",monospace';ctx.textAlign='left';ctx.fillStyle='#e9eef6';ctx.fillText('SCORE '+score,10,16);
     ctx.textAlign='right';ctx.fillStyle='#ffb627';ctx.fillText('WAVE '+wave,W-10,16);
     ctx.textAlign='left';for(let i=0;i<lives;i++){ctx.fillStyle='#3ddc84';const lx=12+i*16,ly=H-8;ctx.beginPath();ctx.moveTo(lx,ly-6);ctx.lineTo(lx-5,ly+3);ctx.lineTo(lx+5,ly+3);ctx.closePath();ctx.fill();}
+    if(dead)drawOver();
   }
   function drawOver(){
     ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);
@@ -919,14 +930,14 @@ function startSwarm(){
     ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.fillText('SPACE / tap to retry',W/2,H/2+44);
   }
 
-  let raf;
+  let stopLoop;
   function cleanup(){
-    cancelAnimationFrame(raf);
+    if(stopLoop)stopLoop();
     document.removeEventListener('keydown',kd);document.removeEventListener('keyup',ku);
     cv.onpointerdown=null;cv.onpointermove=null;cv.onpointerup=null;cv.onpointerleave=null;
   }
   activeCleanup=cleanup;
-  raf=requestAnimationFrame(update);
+  stopLoop=driveLoop(tick,draw);
 }
 </script>
 <script>
