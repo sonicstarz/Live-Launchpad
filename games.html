@@ -345,6 +345,8 @@ const GAMES=[
   {art:'🛬',name:'BOOSTER LANDING',desc:'Burn to slow your descent. Touch down gently on the droneship.',status:'ready',play:'lander'},
   {art:'☄️',name:'ORBITAL DEBRIS',desc:'Pilot a capsule through a field of asteroids and dead satellites.',status:'ready',play:'orbital'},
   {art:'👾',name:'STAR SWARM',desc:'Defend the launch site. Blast the alien swarm before they dive on you.',status:'ready',play:'swarm'},
+  {art:'🪐',name:'GRAVITY ASSIST',desc:'Drag to aim, release to slingshot your probe around the planet\'s gravity and thread the gate.',status:'ready',play:'gravity'},
+  {art:'⛽',name:'FUEL TRANSFER',desc:'Rendezvous and dock to the orbital depot — ease in slowly, don\'t slam the port.',status:'ready',play:'fuel'},
   {art:'🧠',name:'LAUNCH TRIVIA',desc:'A daily quiz drawn from decades of space history. Build your streak.',status:'soon'},
   {art:'🛰',name:'ROCKETLE',desc:'Guess the rocket in six tries. A new mystery vehicle every day.',status:'soon'}
 ];
@@ -387,6 +389,8 @@ $('start').onclick=function(){
   else if(g.play==='lander')openLander();
   else if(g.play==='orbital')openOrbital();
   else if(g.play==='swarm')openSwarm();
+  else if(g.play==='gravity')openGravity();
+  else if(g.play==='fuel')openFuel();
 };
 document.addEventListener('keydown',function(e){
   if($('stage').classList.contains('open'))return;
@@ -936,6 +940,129 @@ function startSwarm(){
     document.removeEventListener('keydown',kd);document.removeEventListener('keyup',ku);
     cv.onpointerdown=null;cv.onpointermove=null;cv.onpointerup=null;cv.onpointerleave=null;
   }
+  activeCleanup=cleanup;
+  stopLoop=driveLoop(tick,draw);
+}
+
+/* ============ GRAVITY ASSIST ============ */
+function openGravity(){
+  openStage('GRAVITY ASSIST','Drag from the probe to aim · release to slingshot · thread the green gate · lives: 3');
+  startGravity();
+}
+function startGravity(){
+  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  const G=1800, START={x:54,y:200};   // G (=GM) and launch speed below are the feel knobs
+  let planet,target,probe,flying,aiming,aim,lives,score,dead;
+  function placePlanet(){ planet={x:165+Math.random()*120,y:80+Math.random()*240,r:24+Math.random()*9}; }
+  function placeTarget(){ let x,y,n=0; do{ x=150+Math.random()*225; y=34+Math.random()*332; n++; } while(n<50 && (Math.hypot(x-planet.x,y-planet.y)<planet.r+46 || x<118)); target={x:x,y:y,r:15}; }
+  function resetProbe(){ probe={x:START.x,y:START.y,vx:0,vy:0}; flying=false; aiming=false; aim=null; }
+  function reset(){ lives=3; score=0; dead=false; placePlanet(); placeTarget(); resetProbe(); }
+  reset();
+  const _g={ax:0,ay:0};
+  function accelAt(x,y){ const dx=planet.x-x,dy=planet.y-y; let d2=dx*dx+dy*dy; const min=planet.r*planet.r; if(d2<min)d2=min; const a=G/d2, inv=1/Math.sqrt(d2); _g.ax=dx*inv*a; _g.ay=dy*inv*a; }
+  function predict(){ if(!aim)return[]; let x=START.x,y=START.y,vx=aim.vx,vy=aim.vy,pts=[]; for(let i=0;i<130;i++){ accelAt(x,y); vx+=_g.ax;vy+=_g.ay;x+=vx;y+=vy; if(i%4===0)pts.push([x,y]); if(Math.hypot(planet.x-x,planet.y-y)<planet.r)break; if(x<-30||x>W+30||y<-30||y>H+30)break; } return pts; }
+  function loseLife(){ lives--; if(lives<=0){ dead=true; LL_onGameOver('gravity',score); } else resetProbe(); }
+  function ptr(e){ const r=cv.getBoundingClientRect(); return { x:((e.touches?e.touches[0].clientX:e.clientX)-r.left)*(W/r.width), y:((e.touches?e.touches[0].clientY:e.clientY)-r.top)*(H/r.height) }; }
+  function updateAim(p){ let dx=START.x-p.x,dy=START.y-p.y; const len=Math.hypot(dx,dy); const pw=Math.min(len,90)/90, sp=1.0+pw*5.0, inv=len>0?1/len:0; aim={vx:dx*inv*sp, vy:dy*inv*sp}; }
+  cv.onpointerdown=function(e){ e.preventDefault(); if(dead){cleanup();startGravity();return;} if(flying)return; aiming=true; updateAim(ptr(e)); };
+  cv.onpointermove=function(e){ if(aiming){ e.preventDefault(); updateAim(ptr(e)); } };
+  cv.onpointerup=function(){ if(!aiming)return; aiming=false; if(aim){ probe.vx=aim.vx; probe.vy=aim.vy; flying=true; } };
+  const keyHandler=function(e){ if((e.key===' '||e.code==='Space')&&dead){ e.preventDefault(); cleanup(); startGravity(); } };
+  document.addEventListener('keydown',keyHandler);
+  function tick(){
+    if(dead||!flying)return;
+    accelAt(probe.x,probe.y); probe.vx+=_g.ax; probe.vy+=_g.ay; probe.x+=probe.vx; probe.y+=probe.vy;
+    if(Math.hypot(planet.x-probe.x,planet.y-probe.y)<planet.r){ loseLife(); return; }
+    if(Math.hypot(target.x-probe.x,target.y-probe.y)<target.r){ score++; $('stageInfo').textContent='Drag to aim · release to slingshot · score: '+score+' · lives: '+lives; placeTarget(); resetProbe(); return; }
+    if(probe.x<-30||probe.x>W+30||probe.y<-30||probe.y>H+30){ loseLife(); }
+  }
+  function draw(){
+    ctx.fillStyle='#060d16';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(255,255,255,.22)';for(let i=0;i<44;i++)ctx.fillRect((i*71)%W,(i*53)%H,1.4,1.4);
+    ctx.strokeStyle='#3ddc84';ctx.lineWidth=3;ctx.beginPath();ctx.arc(target.x,target.y,target.r,0,6.283);ctx.stroke();
+    ctx.strokeStyle='rgba(61,220,132,.3)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(target.x,target.y,target.r+6,0,6.283);ctx.stroke();
+    var grd=ctx.createRadialGradient(planet.x-planet.r*0.3,planet.y-planet.r*0.3,2,planet.x,planet.y,planet.r);
+    grd.addColorStop(0,'#6da8ff');grd.addColorStop(1,'#1c3a66');
+    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(planet.x,planet.y,planet.r,0,6.283);ctx.fill();
+    ctx.strokeStyle='rgba(109,168,255,.22)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(planet.x,planet.y,planet.r+10,0,6.283);ctx.stroke();
+    if(aiming&&aim){ const pts=predict(); ctx.fillStyle='rgba(255,182,39,.7)'; for(let i=0;i<pts.length;i++)ctx.fillRect(pts[i][0]-1.5,pts[i][1]-1.5,3,3); }
+    ctx.save();ctx.translate(probe.x,probe.y);
+    if(flying){ctx.fillStyle='rgba(255,122,60,.7)';ctx.beginPath();ctx.arc(-probe.vx,-probe.vy,3,0,6.283);ctx.fill();}
+    ctx.fillStyle='rgba(255,182,39,.35)';ctx.beginPath();ctx.arc(0,0,9,0,6.283);ctx.fill();
+    ctx.fillStyle='#ffb627';ctx.beginPath();ctx.arc(0,0,5,0,6.283);ctx.fill();
+    ctx.restore();
+    ctx.font='10px "Press Start 2P",monospace';ctx.textAlign='left';ctx.fillStyle='#e9eef6';ctx.fillText('SCORE '+score,10,16);
+    ctx.textAlign='right';ctx.fillStyle='#ffb627';ctx.fillText('LIVES '+Math.max(0,lives),W-10,16);
+    if(!flying&&!dead){ ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.textAlign='center';ctx.fillText('DRAG FROM PROBE TO AIM',W/2,H-14); }
+    if(dead){ ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#ff5d5d';ctx.font='18px "Press Start 2P",monospace';ctx.textAlign='center';ctx.fillText('LOST IN SPACE',W/2,H/2-10);ctx.fillStyle='#ffb627';ctx.font='10px "Press Start 2P",monospace';ctx.fillText('SCORE '+score,W/2,H/2+20);ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.fillText('SPACE / tap to retry',W/2,H/2+44); }
+  }
+  let stopLoop;
+  function cleanup(){ if(stopLoop)stopLoop(); document.removeEventListener('keydown',keyHandler); cv.onpointerdown=null;cv.onpointermove=null;cv.onpointerup=null; }
+  activeCleanup=cleanup;
+  stopLoop=driveLoop(tick,draw);
+}
+
+/* ============ FUEL TRANSFER ============ */
+function openFuel(){
+  openStage('FUEL TRANSFER','Arrow keys / drag to maneuver · dock to the depot SLOWLY (green ring) · lives: 3');
+  startFuel();
+}
+function startFuel(){
+  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  const ACC=0.22,FRICTION=0.985,MAXV=4.0,SAFE=0.9,DOCK_R=20,SHIP_R=9;
+  let px,py,vx,vy,depot,lives,score,dead,docked,dockT,keys,drag,tx,ty;
+  function placeDepot(){ depot={x:40+Math.random()*(W-80), y:34+Math.random()*90}; }
+  function reset(){ px=W/2;py=H-40;vx=0;vy=0;lives=3;score=0;dead=false;docked=false;dockT=0;keys={};drag=false;tx=null;ty=null; placeDepot(); }
+  reset();
+  const ARROWS=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+  const kd=function(e){ if(e.key===' '||e.code==='Space'){ e.preventDefault(); if(dead){cleanup();startFuel();return;} } if(ARROWS.indexOf(e.key)>=0){ e.preventDefault(); keys[e.key]=true; } };
+  const ku=function(e){ if(ARROWS.indexOf(e.key)>=0)keys[e.key]=false; };
+  document.addEventListener('keydown',kd);document.addEventListener('keyup',ku);
+  function ptr(e){ const r=cv.getBoundingClientRect(); tx=((e.touches?e.touches[0].clientX:e.clientX)-r.left)*(W/r.width); ty=((e.touches?e.touches[0].clientY:e.clientY)-r.top)*(H/r.height); }
+  cv.onpointerdown=function(e){ e.preventDefault(); if(dead){cleanup();startFuel();return;} drag=true; ptr(e); };
+  cv.onpointermove=function(e){ if(drag){ e.preventDefault(); ptr(e); } };
+  cv.onpointerup=function(){ drag=false; tx=null;ty=null; };
+  cv.onpointerleave=function(){ drag=false; tx=null;ty=null; };
+  function tick(){
+    if(dead)return;
+    if(docked){ vx=0;vy=0; dockT++; if(dockT>50){ score+=100; docked=false; placeDepot(); px=W/2;py=H-40;vx=0;vy=0; $('stageInfo').textContent='Arrow keys / drag to maneuver · dock SLOWLY · score: '+score+' · lives: '+lives; } return; }
+    if(drag&&tx!=null){ vx+=(tx-px)*0.012; vy+=(ty-py)*0.012; }
+    if(keys.ArrowUp)vy-=ACC; if(keys.ArrowDown)vy+=ACC; if(keys.ArrowLeft)vx-=ACC; if(keys.ArrowRight)vx+=ACC;
+    vx*=FRICTION; vy*=FRICTION;
+    vx=Math.max(-MAXV,Math.min(MAXV,vx)); vy=Math.max(-MAXV,Math.min(MAXV,vy));
+    px+=vx; py+=vy;
+    if(px<SHIP_R){px=SHIP_R;vx*=-0.4;} if(px>W-SHIP_R){px=W-SHIP_R;vx*=-0.4;}
+    if(py<SHIP_R){py=SHIP_R;vy*=-0.4;} if(py>H-SHIP_R){py=H-SHIP_R;vy*=-0.4;}
+    const d=Math.hypot(px-depot.x,py-depot.y), spd=Math.hypot(vx,vy);
+    if(d<DOCK_R){ if(spd<SAFE){ docked=true; dockT=0; } else { lives--; if(lives<=0){ dead=true; LL_onGameOver('fuel',score); } else { px=W/2;py=H-40;vx=0;vy=0; } } }
+  }
+  function draw(){
+    ctx.fillStyle='#060d16';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(255,255,255,.22)';for(let i=0;i<44;i++)ctx.fillRect((i*67)%W,(i*41)%H,1.4,1.4);
+    var near=Math.hypot(px-depot.x,py-depot.y)<DOCK_R, slow=Math.hypot(vx,vy)<SAFE;
+    ctx.save();ctx.translate(depot.x,depot.y);
+    ctx.strokeStyle=near?(slow?'#3ddc84':'#ff5d5d'):'rgba(255,182,39,.45)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,DOCK_R,0,6.283);ctx.stroke();
+    ctx.fillStyle='#2a3650';ctx.fillRect(-18,-8,36,16);
+    ctx.fillStyle='#4d9fff';ctx.fillRect(-26,-3,8,6);ctx.fillRect(18,-3,8,6);
+    ctx.fillStyle='#ffb627';ctx.fillRect(-3,7,6,5);
+    ctx.restore();
+    ctx.save();ctx.translate(px,py);
+    if(keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight||drag){ ctx.fillStyle='#ff7a3c';ctx.fillRect(-2,SHIP_R-1,4,4+Math.random()*4); }
+    ctx.fillStyle='#d9dde3';ctx.beginPath();ctx.moveTo(0,-SHIP_R);ctx.lineTo(SHIP_R,SHIP_R);ctx.lineTo(-SHIP_R,SHIP_R);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#4d9fff';ctx.fillRect(-2,-1,4,4);
+    ctx.restore();
+    var spd=Math.hypot(vx,vy);
+    ctx.font='9px "Press Start 2P",monospace';ctx.textAlign='left';ctx.fillStyle='#e9eef6';ctx.fillText('SCORE '+score,10,16);
+    ctx.textAlign='center';ctx.fillStyle=spd<SAFE?'#3ddc84':'#ffb627';ctx.fillText('APPROACH '+spd.toFixed(1),W/2,H-12);
+    ctx.textAlign='right';ctx.fillStyle='#ffb627';ctx.fillText('LIVES '+Math.max(0,lives),W-10,16);
+    if(docked){ ctx.textAlign='center';ctx.fillStyle='#3ddc84';ctx.font='12px "Press Start 2P",monospace';ctx.fillText('DOCKED — FUELING',W/2,H/2-6);
+      ctx.fillStyle='#2a3650';ctx.fillRect(W/2-60,H/2+12,120,8);ctx.fillStyle='#3ddc84';ctx.fillRect(W/2-60,H/2+12,120*Math.min(1,dockT/50),8); }
+    if(dead){ ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#ff5d5d';ctx.font='18px "Press Start 2P",monospace';ctx.textAlign='center';ctx.fillText('COLLISION!',W/2,H/2-10);ctx.fillStyle='#ffb627';ctx.font='10px "Press Start 2P",monospace';ctx.fillText('SCORE '+score,W/2,H/2+20);ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.fillText('SPACE / tap to retry',W/2,H/2+44); }
+  }
+  let stopLoop;
+  function cleanup(){ if(stopLoop)stopLoop(); document.removeEventListener('keydown',kd);document.removeEventListener('keyup',ku); cv.onpointerdown=null;cv.onpointermove=null;cv.onpointerup=null;cv.onpointerleave=null; }
   activeCleanup=cleanup;
   stopLoop=driveLoop(tick,draw);
 }
