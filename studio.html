@@ -196,6 +196,7 @@ body.compact .row .thumb{width:84px;height:47px}
       <button class="side-item on" data-view="learning"><span class="ic">📚</span> Learning Center<span class="hint">libraries · courses · videos</span></button>
       <button class="side-item" data-view="rockets"><span class="ic">🚀</span> Rocket Explorer<span class="hint">rockets · parts · videos</span></button>
       <button class="side-item" data-view="channels"><span class="ic">🎬</span> Videos<span class="hint">curated YouTube channels</span></button>
+      <button class="side-item" data-view="quizzes"><span class="ic">❓</span> Quizzes<span class="hint">live classroom games</span></button>
       <div class="side-group">System</div>
       <button class="side-item" data-view="settings"><span class="ic">⚙</span> Settings<span class="hint">session · backend · appearance</span></button>
     </div>
@@ -222,6 +223,10 @@ body.compact .row .thumb{width:84px;height:47px}
       <div id="channels-wrap" class="view" hidden>
         <div class="studio-msg" id="chan-msg"></div>
         <div id="chan-host"></div>
+      </div>
+      <div id="quizzes-wrap" class="view" hidden>
+        <div class="studio-msg" id="qz-msg"></div>
+        <div id="qz-host"></div>
       </div>
       <div id="settings-wrap" class="view" hidden></div>
     </div>
@@ -810,18 +815,115 @@ var VideoChannels = (function(){
   return { init:init };
 })();
 
+/* ===== QUIZ EDITOR (live "Go/No-Go" quizzes) ===== */
+var QuizStudio = (function(){
+  var sb, host, msg, inited=false, quiz=null, list=[];
+  function el(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
+  function toast(t,err){ if(!msg)return; msg.style.color=err?'#ff5d5d':'var(--accent)'; msg.textContent=t||''; if(t){var c=t;setTimeout(function(){if(msg.textContent===c)msg.textContent='';},3000);} }
+  function modal(){return el('modal');} function closeModal(){modal().classList.remove('open');}
+
+  async function renderQuizzes(){
+    quiz=null;
+    var r=await sb.from('quizzes').select('*').order('sort_order',{ascending:true});
+    if(r.error){ toast('Load failed: '+r.error.message+(/relation|table/i.test(r.error.message)?' — run quiz.sql':''),true); host.innerHTML=''; return; }
+    list=r.data||[];
+    var counts=await Promise.all(list.map(function(q){ return sb.from('quiz_questions').select('*',{count:'exact',head:true}).eq('quiz_id',q.id).then(function(x){return x.count||0;}); }));
+    var h='<div class="crumb"><span class="cur">Quizzes</span></div><div class="addbar"><button class="btn" id="qz-add">+ New quiz</button></div>';
+    h+='<div style="font-family:var(--mono);font-size:12px;color:var(--txt3);margin-bottom:14px;line-height:1.6">Build a question set, then <b>Host</b> it live — students join on their phones with a room code. Use real, sourced facts.</div>';
+    if(!list.length) h+='<div class="empty">No quizzes yet — create one. (Run <code>quiz.sql</code> first if you hit a load error.)</div>';
+    list.forEach(function(q,i){ h+='<div class="row" data-i="'+i+'"><div class="info"><h4>'+esc(q.title)+(q.published?'':' <span style="color:var(--txt3)">· draft</span>')+'</h4><div class="count">'+counts[i]+' question'+(counts[i]===1?'':'s')+'</div></div><div class="acts">'
+      +'<button class="iconbtn open" data-act="host" title="Host live">▶ Host</button>'
+      +'<button class="iconbtn" data-act="edit">✎</button>'
+      +'<button class="iconbtn danger" data-act="del">🗑</button>'
+      +'<button class="iconbtn open" data-act="open">Questions ›</button></div></div>'; });
+    host.innerHTML=h; el('qz-add').onclick=function(){ quizEditor(null); };
+    host.querySelectorAll('.row').forEach(function(rw){ var qz=list[+rw.dataset.i];
+      rw.querySelectorAll('[data-act]').forEach(function(b){ b.onclick=function(){ var a=b.dataset.act;
+        if(a==='open'){quiz=qz;renderQuestions();} else if(a==='edit')quizEditor(qz); else if(a==='del')delQuiz(qz); else if(a==='host')window.open('quiz-host.html?quiz='+qz.id,'_blank'); }; }); });
+  }
+  function quizEditor(item){
+    el('modal-box').innerHTML='<h3>'+(item?'Edit ':'New ')+'quiz</h3>'
+      +'<div class="field"><label>Title</label><input id="qz-title" value="'+esc(item?item.title:'')+'"></div>'
+      +'<div class="field"><label>Description</label><textarea id="qz-desc">'+esc(item?item.description:'')+'</textarea></div>'
+      +'<div class="field"><label style="text-transform:none"><input type="checkbox" id="qz-pub" '+((item&&item.published)?'checked':'')+'> Published</label></div>'
+      +'<div class="modal-acts"><button class="btn ghost" id="qz-cancel">Cancel</button><button class="btn" id="qz-save">Save</button></div>';
+    modal().classList.add('open'); el('qz-cancel').onclick=closeModal; el('qz-save').onclick=function(){ saveQuiz(item); }; el('qz-title').focus();
+  }
+  async function saveQuiz(item){
+    var t=el('qz-title').value.trim(); if(!t){toast('Title required',true);return;}
+    var p={title:t,description:el('qz-desc').value.trim(),published:el('qz-pub').checked};
+    el('qz-save').disabled=true; var r;
+    if(item) r=await sb.from('quizzes').update(p).eq('id',item.id);
+    else { p.sort_order=list.length; r=await sb.from('quizzes').insert(p); }
+    if(r.error){toast('Save failed: '+r.error.message,true);el('qz-save').disabled=false;return;}
+    closeModal(); renderQuizzes(); toast('Saved');
+  }
+  async function delQuiz(item){ if(!confirm('Delete “'+item.title+'” and its questions?'))return; var r=await sb.from('quizzes').delete().eq('id',item.id); if(r.error){toast('Delete failed: '+r.error.message,true);return;} renderQuizzes(); toast('Deleted'); }
+
+  async function renderQuestions(){
+    var r=await sb.from('quiz_questions').select('*').eq('quiz_id',quiz.id).order('sort_order',{ascending:true});
+    if(r.error){toast('Load failed: '+r.error.message,true);return;}
+    list=r.data||[];
+    var h='<div class="crumb"><a id="qz-back">Quizzes</a><span class="sep">/</span><span class="cur">'+esc(quiz.title)+'</span></div><div class="addbar"><button class="btn" id="qz-qadd">+ New question</button> <button class="btn ghost" id="qz-hostbtn">▶ Host live</button></div>';
+    if(!list.length) h+='<div class="empty">No questions yet.</div>';
+    list.forEach(function(q,i){ var ch=Array.isArray(q.choices)?q.choices:[]; var ans=ch[q.correct_index]||'—';
+      h+='<div class="row" data-i="'+i+'"><div class="info"><h4>'+esc(q.prompt)+'</h4><div class="count">✓ '+esc(ans)+' · '+q.time_limit_s+'s'+(q.source_url?' · sourced':' · ⚠ no source')+'</div></div><div class="acts">'
+      +'<button class="iconbtn" data-act="up"'+(i===0?' disabled':'')+'>▲</button><button class="iconbtn" data-act="down"'+(i===list.length-1?' disabled':'')+'>▼</button>'
+      +'<button class="iconbtn" data-act="edit">✎</button><button class="iconbtn danger" data-act="del">🗑</button></div></div>'; });
+    host.innerHTML=h;
+    el('qz-back').onclick=renderQuizzes; el('qz-qadd').onclick=function(){ questionEditor(null); };
+    var hb=el('qz-hostbtn'); if(hb) hb.onclick=function(){ window.open('quiz-host.html?quiz='+quiz.id,'_blank'); };
+    host.querySelectorAll('.row').forEach(function(rw){ var i=+rw.dataset.i, qq=list[i];
+      rw.querySelectorAll('[data-act]').forEach(function(b){ b.onclick=function(){ var a=b.dataset.act;
+        if(a==='edit')questionEditor(qq); else if(a==='del')delQuestion(qq); else if(a==='up')reorderQ(i,i-1); else if(a==='down')reorderQ(i,i+1); }; }); });
+  }
+  function questionEditor(item){
+    var ch=item&&Array.isArray(item.choices)?item.choices:[]; var ci=item?item.correct_index:0;
+    var crow=function(i){ return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="radio" name="qq-correct" value="'+i+'"'+(ci===i?' checked':'')+' title="Mark correct" style="flex:none"><input class="qq-ch" data-i="'+i+'" placeholder="Answer '+(i+1)+'" value="'+esc(ch[i]||'')+'" style="flex:1"></div>'; };
+    el('modal-box').innerHTML='<h3>'+(item?'Edit ':'New ')+'question</h3>'
+      +'<div class="field"><label>Question</label><textarea id="qq-prompt">'+esc(item?item.prompt:'')+'</textarea></div>'
+      +'<div class="field"><label>Answers <span style="text-transform:none;color:var(--txt3)">(select the correct one)</span></label>'+crow(0)+crow(1)+crow(2)+crow(3)+'</div>'
+      +'<div style="display:flex;gap:10px"><div class="field" style="flex:1"><label>Time (s)</label><input id="qq-time" type="number" value="'+(item?item.time_limit_s:20)+'"></div><div class="field" style="flex:1"><label>Points</label><input id="qq-points" type="number" value="'+(item?item.points:1000)+'"></div></div>'
+      +'<div class="field"><label>Source URL <span style="text-transform:none;color:var(--txt3)">(real fact)</span></label><input id="qq-src" value="'+esc(item?item.source_url:'')+'"></div>'
+      +'<div class="modal-acts"><button class="btn ghost" id="qq-cancel">Cancel</button><button class="btn" id="qq-save">Save</button></div>';
+    modal().classList.add('open'); el('qq-cancel').onclick=closeModal; el('qq-save').onclick=function(){ saveQuestion(item); };
+  }
+  async function saveQuestion(item){
+    var prompt=el('qq-prompt').value.trim();
+    var raw=[].slice.call(document.querySelectorAll('.qq-ch')).map(function(i){return i.value.trim();});
+    var ci=parseInt((document.querySelector('input[name=qq-correct]:checked')||{}).value||'0',10);
+    var correctVal=raw[ci];
+    var choices=raw.filter(Boolean);
+    if(!prompt||choices.length<2){ toast('Need a question and at least 2 answers',true); return; }
+    if(!correctVal){ toast('The correct answer can’t be blank',true); return; }
+    var p={prompt:prompt,choices:choices,correct_index:choices.indexOf(correctVal),time_limit_s:parseInt(el('qq-time').value,10)||20,points:parseInt(el('qq-points').value,10)||1000,source_url:el('qq-src').value.trim()};
+    el('qq-save').disabled=true; var r;
+    if(item) r=await sb.from('quiz_questions').update(p).eq('id',item.id);
+    else { p.quiz_id=quiz.id; p.sort_order=list.length; r=await sb.from('quiz_questions').insert(p); }
+    if(r.error){toast('Save failed: '+r.error.message,true);el('qq-save').disabled=false;return;}
+    closeModal(); renderQuestions(); toast('Saved');
+  }
+  async function delQuestion(item){ if(!confirm('Delete this question?'))return; var r=await sb.from('quiz_questions').delete().eq('id',item.id); if(r.error){toast('Delete failed: '+r.error.message,true);return;} renderQuestions(); }
+  async function reorderQ(i,j){ if(j<0||j>=list.length)return; var a=list.slice(),t=a[i];a[i]=a[j];a[j]=t; await Promise.all(a.map(function(it,idx){return sb.from('quiz_questions').update({sort_order:idx}).eq('id',it.id);})); renderQuestions(); }
+
+  function init(){ if(inited)return; inited=true; sb=window.LLAuth&&window.LLAuth.sb; host=el('qz-host'); msg=el('qz-msg'); if(!sb){toast('Not signed in',true);return;} renderQuizzes(); }
+  return { init:init };
+})();
+
 /* ===== console shell: sidebar navigation + settings ===== */
 (function(){
   function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
   try{ if(localStorage.getItem('ll-studio-density')==='compact') document.body.classList.add('compact'); }catch(e){}
 
-  var VIEWS={ learning:['lessons-wrap','Learning Center'], rockets:['rocket-wrap','Rocket Explorer'], channels:['channels-wrap','Videos'], settings:['settings-wrap','Settings'] };
+  var VIEWS={ learning:['lessons-wrap','Learning Center'], rockets:['rocket-wrap','Rocket Explorer'], channels:['channels-wrap','Videos'], quizzes:['quizzes-wrap','Quizzes'], settings:['settings-wrap','Settings'] };
   window.__studioView=function(v){
     Object.keys(VIEWS).forEach(function(k){ var el=document.getElementById(VIEWS[k][0]); if(el) el.hidden=(k!==v); });
     document.querySelectorAll('.side-item').forEach(function(x){ x.classList.toggle('on',x.dataset.view===v); });
     var tb=document.getElementById('tbTitle'); if(tb) tb.textContent=VIEWS[v][1];
     if(v==='rockets' && window.RocketStudio) RocketStudio.init();
     if(v==='channels' && window.VideoChannels) VideoChannels.init();
+    if(v==='quizzes' && window.QuizStudio) QuizStudio.init();
     if(v==='settings') renderSettings();
     var c=document.querySelector('.console'); if(c) c.classList.remove('side-open');
   };
