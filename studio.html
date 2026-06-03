@@ -402,10 +402,10 @@ var RocketStudio = (function(){
   async function renderParts(){
     part=null;
     var parts=await q('rocket_parts','*',[['rocket_id',rocket.id]],'display_order'); list=parts;
-    var h='<div class="crumb"><a data-nav="rockets">Rockets</a><span class="sep">/</span><span class="cur">'+esc(rocket.name)+'</span></div><div class="addbar"><button class="btn" id="rk-add">+ New part</button></div>';
-    if(!parts.length) h+='<div class="empty">No parts yet.</div>';
+    var h='<div class="crumb"><a data-nav="rockets">Rockets</a><span class="sep">/</span><span class="cur">'+esc(rocket.name)+'</span></div><div class="addbar"><button class="btn" id="rk-add">+ New part</button> <button class="btn ghost" id="rk-ai">✨ AI draft parts</button></div>';
+    if(!parts.length) h+='<div class="empty">No parts yet — add them by hand, or let ✨ AI draft a starting point you review.</div>';
     parts.forEach(function(p,i){ var miss=!p.what_it_is&&!p.how_it_works; h+='<div class="row" data-i="'+i+'"><div class="info"><h4>'+esc(p.part_number?p.part_number+' · ':'')+esc(p.name)+'</h4><div class="count">mesh: '+esc(p.mesh_key)+(miss?' · ⚠ needs description':'')+'</div></div><div class="acts">'+upDown(i,parts.length)+'<button class="iconbtn" data-act="edit">✎</button><button class="iconbtn danger" data-act="del">🗑</button><button class="iconbtn open" data-act="open">Videos ›</button></div></div>'; });
-    host.innerHTML=h; el('rk-add').onclick=function(){ partEditor(null); }; wire(parts,'part');
+    host.innerHTML=h; el('rk-add').onclick=function(){ partEditor(null); }; el('rk-ai').onclick=aiDraft; wire(parts,'part');
   }
   async function renderPartVideos(){
     var pv=await q('part_videos','id,display_order,video_id,videos(id,title,youtube_id)',[['part_id',part.id]],'display_order'); list=pv;
@@ -495,6 +495,80 @@ var RocketStudio = (function(){
     var r=await sb.from('part_videos').insert({part_id:part.id,video_id:videoId,display_order:(list||[]).length});
     if(r.error){toast('Link failed: '+r.error.message,true);return;}
     closeModal(); renderPartVideos(); toast('Linked');
+  }
+
+  /* ----- AI draft parts (Netlify function → editable review → save) ----- */
+  function namesFrom(j){ var s={}; (j.nodes||[]).forEach(function(n){if(n&&n.name)s[n.name]=1;}); (j.meshes||[]).forEach(function(m){if(m&&m.name)s[m.name]=1;}); return Object.keys(s); }
+  async function glbNodeNames(url){
+    try{
+      var buf=await (await fetch(url)).arrayBuffer(), dv=new DataView(buf);
+      if(dv.byteLength>=12 && dv.getUint32(0,true)===0x46546C67){ // .glb (binary glTF)
+        var len=dv.getUint32(8,true), off=12, jsonStr=null;
+        while(off+8<=len){ var clen=dv.getUint32(off,true), ctype=dv.getUint32(off+4,true), cstart=off+8;
+          if(ctype===0x4E4F534A){ jsonStr=new TextDecoder().decode(new Uint8Array(buf,cstart,clen)); break; }
+          off=cstart+clen; }
+        return jsonStr? namesFrom(JSON.parse(jsonStr)) : [];
+      }
+      return namesFrom(JSON.parse(new TextDecoder().decode(buf))); // plain .gltf
+    }catch(e){ return []; }
+  }
+  async function aiDraft(){
+    var btn=el('rk-ai'); if(btn){ btn.disabled=true; btn.textContent='✨ Thinking…'; }
+    try{
+      var sess=await sb.auth.getSession();
+      var token=sess&&sess.data&&sess.data.session&&sess.data.session.access_token;
+      if(!token){ toast('Session expired — reload and sign in.',true); return; }
+      var nodeNames=[];
+      if(rocket.model_kind==='glb' && rocket.model_url){ toast('Reading model parts…'); nodeNames=await glbNodeNames(rocket.model_url); }
+      var existingParts=(list||[]).map(function(p){ return {mesh_key:p.mesh_key,name:p.name}; });
+      var resp=await fetch('/.netlify/functions/rocket-assist',{ method:'POST', headers:{'content-type':'application/json',Authorization:'Bearer '+token},
+        body:JSON.stringify({rocketName:rocket.name,operator:rocket.operator,subtitle:rocket.subtitle,height_m:rocket.height_m,nodeNames:nodeNames,existingParts:existingParts}) });
+      var out=await resp.json().catch(function(){return {};});
+      if(!resp.ok){ toast('AI: '+(out.error||('error '+resp.status)),true); return; }
+      if(!out.parts||!out.parts.length){ toast('No parts proposed — try again.',true); return; }
+      aiReview(out.parts);
+    }catch(e){ toast('AI request failed: '+e.message,true); }
+    finally{ if(btn){ btn.disabled=false; btn.textContent='✨ AI draft parts'; } }
+  }
+  function aiReview(parts){
+    var head='<h3>✨ AI draft — review before saving</h3><p style="color:var(--txt3);font-size:13px;margin:-6px 0 12px">Edit anything, untick parts you don’t want, and verify the sources. Saving is your sign-off — matching mesh keys update existing parts, new ones are added.</p>';
+    var cards='<div id="ai-list" style="max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px">';
+    parts.forEach(function(p){
+      var specs=(p.specs||[]).map(function(s){return s[0]+': '+s[1];}).join('\n');
+      var src=(p.sources||[]).map(function(u){return '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:#6da8ff;font-size:11px;word-break:break-all">'+esc(u)+'</a>';}).join('<br>');
+      cards+='<div class="ai-card" style="border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px;background:rgba(255,255,255,.03)">'
+        +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" class="ai-on" checked>'
+        +'<input class="ai-num" value="'+esc(p.part_number)+'" style="width:48px"><input class="ai-name" value="'+esc(p.name)+'" style="flex:1;font-weight:700"></label>'
+        +'<div style="display:flex;gap:8px;align-items:center;margin-top:8px"><span style="font-size:11px;color:var(--txt3)">mesh key</span><input class="ai-mesh" value="'+esc(p.mesh_key)+'" style="flex:1"></div>'
+        +'<textarea class="ai-what" placeholder="What it is" style="width:100%;margin-top:8px;min-height:50px">'+esc(p.what_it_is)+'</textarea>'
+        +'<textarea class="ai-how" placeholder="How it works" style="width:100%;margin-top:6px;min-height:64px">'+esc(p.how_it_works)+'</textarea>'
+        +'<textarea class="ai-specs" placeholder="Label: value (one per line)" style="width:100%;margin-top:6px;min-height:48px">'+esc(specs)+'</textarea>'
+        +(src?'<div style="margin-top:6px;font-size:11px;color:var(--txt3)">Sources:<br>'+src+'</div>':'<div style="margin-top:6px;font-size:11px;color:#ff8a5b">⚠ No source provided — verify before saving.</div>')
+        +'</div>';
+    });
+    cards+='</div>';
+    el('modal-box').innerHTML=head+cards+'<div class="modal-acts"><button class="btn ghost" id="ai-cancel">Cancel</button><button class="btn" id="ai-apply">Apply selected</button></div>';
+    modal().classList.add('open'); el('ai-cancel').onclick=closeModal; el('ai-apply').onclick=aiApply;
+  }
+  async function aiApply(){
+    var cards=document.querySelectorAll('#ai-list .ai-card'), existing={};
+    (list||[]).forEach(function(p){ existing[p.mesh_key]=p; });
+    var ops=[], ord=(list||[]).length, n=0;
+    cards.forEach(function(card){
+      if(!card.querySelector('.ai-on').checked) return;
+      var g=function(c){ var e=card.querySelector('.'+c); return e?e.value.trim():''; };
+      var mesh=g('ai-mesh'), name=g('ai-name'); if(!mesh||!name) return;
+      var specs=g('ai-specs').split('\n').map(function(l){var ix=l.indexOf(':');return ix<0?null:[l.slice(0,ix).trim(),l.slice(ix+1).trim()];}).filter(function(x){return x&&x[0];});
+      var rec={part_number:g('ai-num'),name:name,mesh_key:mesh,what_it_is:g('ai-what'),how_it_works:g('ai-how'),specs:specs};
+      if(existing[mesh]) ops.push(sb.from('rocket_parts').update(rec).eq('id',existing[mesh].id));
+      else { rec.rocket_id=rocket.id; rec.display_order=ord++; ops.push(sb.from('rocket_parts').insert(rec)); }
+      n++;
+    });
+    if(!ops.length){ toast('Nothing selected',true); return; }
+    el('ai-apply').disabled=true;
+    var res=await Promise.all(ops), err=res.find(function(r){return r.error;});
+    if(err){ toast('Save failed: '+err.error.message,true); el('ai-apply').disabled=false; return; }
+    closeModal(); renderParts(); toast('Saved '+n+' part(s)');
   }
 
   function init(){ if(inited)return; inited=true; sb=window.LLAuth&&window.LLAuth.sb; host=el('rk-host'); msg=el('rk-msg'); if(!sb){toast('Not signed in',true);return;} renderRockets(); }
