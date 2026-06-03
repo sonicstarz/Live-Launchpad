@@ -165,18 +165,7 @@ footer a:hover{color:var(--amber)}
   </section>
 
   <section class="section">
-    <div class="countdown">
-      <div class="cd-label">◉ Next launch — T-minus</div>
-      <div class="cd-mission" id="cd-mission">Loading next launch…</div>
-      <div class="cd-meta" id="cd-meta">Fetching live schedule…</div>
-      <div class="cd-clock" id="cd-clock">
-        <div class="cd-unit"><div class="cd-num" id="cd-d">--</div><div class="cd-u">days</div></div>
-        <div class="cd-unit"><div class="cd-num" id="cd-h">--</div><div class="cd-u">hours</div></div>
-        <div class="cd-unit"><div class="cd-num" id="cd-m">--</div><div class="cd-u">min</div></div>
-        <div class="cd-unit"><div class="cd-num" id="cd-s">--</div><div class="cd-u">sec</div></div>
-      </div>
-      <div class="filler-note"><b>Live countdown.</b> Pulling the next launch from the Launch Library 2 feed. Showing a recent snapshot if the live feed is unavailable.</div>
-    </div>
+    <div data-ll-countdown></div>
   </section>
 
   <section class="section">
@@ -231,42 +220,7 @@ footer a:hover{color:var(--amber)}
 <div id="site-footer"></div>
 
 
-<script>
-  // Live next-launch countdown (with fallback). Tries the schedule function, then SNAPI-independent fallback.
-  var FALLBACK_NEXT={name:"Falcon 9 Block 5 · Starlink Group 17-44",meta:"SpaceX · SLC-4E, Vandenberg · status: GO",net:"2026-06-10T14:00:00Z"};
-  var target=new Date(FALLBACK_NEXT.net);
-  function setMission(name,meta){
-    var mEl=document.getElementById('cd-mission'),meEl=document.getElementById('cd-meta');
-    if(mEl)mEl.textContent=name;if(meEl)meEl.textContent=meta;
-  }
-  setMission(FALLBACK_NEXT.name,FALLBACK_NEXT.meta);
-  function tick(){
-    var diff=Math.max(0,target-new Date());
-    var d=Math.floor(diff/86400000),h=Math.floor(diff/3600000)%24,m=Math.floor(diff/60000)%60,s=Math.floor(diff/1000)%60;
-    var p=function(n){return String(n).padStart(2,'0');};
-    document.getElementById('cd-d').textContent=p(d);
-    document.getElementById('cd-h').textContent=p(h);
-    document.getElementById('cd-m').textContent=p(m);
-    document.getElementById('cd-s').textContent=p(s);
-  }
-  tick();setInterval(tick,1000);
-  // try to upgrade to live data
-  (async function(){
-    try{
-      var r=await fetch('/.netlify/functions/launches?kind=upcoming&limit=8');
-      if(!r.ok)return;
-      var data=await r.json();
-      var up=(data.results||[]).filter(function(l){return new Date(l.net)>new Date();}).sort(function(a,b){return new Date(a.net)-new Date(b.net);});
-      if(up.length){
-        var n=up[0];
-        target=new Date(n.net);
-        setMission(n.name||n.mission,[n.provider,n.pad,n.location].filter(Boolean).join(' · ')+' · '+(n.status||'TBD'));
-        var note=document.querySelector('.countdown .filler-note');
-        if(note)note.style.display='none';
-      }
-    }catch(e){/* keep fallback */}
-  })();
-</script>
+<script src="ll-countdown.js" defer></script>
 <script>
 /* ===== SPACE AGE — base ===== */
 (function(){
