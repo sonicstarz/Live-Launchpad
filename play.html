@@ -64,7 +64,8 @@
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
   var sb=createClient('https://oshizhnblnsrjutxyxxg.supabase.co','sb_publishable_QMaIcq2mO6q5qbE-5gT14A_Q-2dKT5r');
   var SHAPES=['▲','◆','●','■'];
-  var ch, pid=Math.random().toString(36).slice(2)+Date.now().toString(36), name='', myChoice=-1, recvTs=0, curI=-1;
+  var _saved=(function(){try{return JSON.parse(sessionStorage.getItem('llq')||'null');}catch(e){return null;}})();
+  var ch, pid=(_saved&&_saved.pid)||(Math.random().toString(36).slice(2)+Date.now().toString(36)), name='', myChoice=-1, recvTs=0, curI=-1;
   var $=function(id){return document.getElementById(id);};
   function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
   function show(id){ ['join','wait','quiz','locked','result'].forEach(function(x){ $(x).classList.toggle('on',x===id); }); }
@@ -73,6 +74,8 @@
   var pc=new URLSearchParams(location.search).get('code'); if(pc) $('code').value=pc.toUpperCase();
 
   $('joinbtn').onclick=join;
+  // auto-rejoin after a refresh / dropped connection (same identity → keeps score)
+  if(_saved&&_saved.code&&_saved.name){ $('code').value=_saved.code; $('name').value=_saved.name; join(); }
   function join(){
     var code=($('code').value||'').trim().toUpperCase(); name=($('name').value||'').trim();
     if(!/^[A-Z0-9]{4,8}$/.test(code)){ $('jmsg').textContent='Enter the game code from the screen.'; return; }
@@ -84,13 +87,13 @@
     ch.on('broadcast',{event:'reveal'},onReveal);
     ch.on('broadcast',{event:'final'},onFinal);
     ch.subscribe(function(s){
-      if(s==='SUBSCRIBED'){ ch.track({name:name,role:'player'}); $('me').textContent=name; show('wait'); }
+      if(s==='SUBSCRIBED'){ ch.track({name:name,role:'player'}); $('me').textContent=name; try{sessionStorage.setItem('llq',JSON.stringify({code:code,name:name,pid:pid}));}catch(e){} if(!$('quiz').classList.contains('on')&&!$('result').classList.contains('on'))show('wait'); }
       else if(s==='CHANNEL_ERROR'||s==='TIMED_OUT'){ $('joinbtn').disabled=false; $('jmsg').textContent='Couldn’t connect — check the code and try again.'; }
     });
   }
   function onState(o){ var p=o.payload||{}; if(p.phase==='lobby'){ if(!$('quiz').classList.contains('on')) show('wait'); } }
   function onQuestion(o){
-    var p=o.payload||{}; curI=p.i; myChoice=-1; recvTs=Date.now();
+    var p=o.payload||{}; if(p.i===curI && myChoice>=0) return; curI=p.i; myChoice=-1; recvTs=Date.now();
     $('qp').textContent=p.prompt;
     $('ans').innerHTML=(p.choices||[]).map(function(c,i){ return '<button class="ab a'+i+'" data-i="'+i+'"><span class="shape">'+SHAPES[i]+'</span></button>'; }).join('');
     $('ans').querySelectorAll('[data-i]').forEach(function(b){ b.onclick=function(){ answer(+b.dataset.i); }; });
@@ -112,6 +115,7 @@
     show('result');
   }
   function onFinal(o){
+    try{sessionStorage.removeItem('llq');}catch(e){}
     var p=o.payload||{}; var r=rankOf(p.leaderboard||[]);
     $('ricon').textContent= r&&r.rank<=3?['🥇','🥈','🥉'][r.rank-1]:'🏁';
     $('rtext').textContent= r?('You finished #'+r.rank):'Game over';

@@ -834,13 +834,14 @@ var QuizStudio = (function(){
     if(!list.length) h+='<div class="empty">No quizzes yet — create one. (Run <code>quiz.sql</code> first if you hit a load error.)</div>';
     list.forEach(function(q,i){ h+='<div class="row" data-i="'+i+'"><div class="info"><h4>'+esc(q.title)+(q.published?'':' <span style="color:var(--txt3)">· draft</span>')+'</h4><div class="count">'+counts[i]+' question'+(counts[i]===1?'':'s')+'</div></div><div class="acts">'
       +'<button class="iconbtn open" data-act="host" title="Host live">▶ Host</button>'
+      +'<button class="iconbtn" data-act="results" title="Past results">📊</button>'
       +'<button class="iconbtn" data-act="edit">✎</button>'
       +'<button class="iconbtn danger" data-act="del">🗑</button>'
       +'<button class="iconbtn open" data-act="open">Questions ›</button></div></div>'; });
     host.innerHTML=h; el('qz-add').onclick=function(){ quizEditor(null); };
     host.querySelectorAll('.row').forEach(function(rw){ var qz=list[+rw.dataset.i];
       rw.querySelectorAll('[data-act]').forEach(function(b){ b.onclick=function(){ var a=b.dataset.act;
-        if(a==='open'){quiz=qz;renderQuestions();} else if(a==='edit')quizEditor(qz); else if(a==='del')delQuiz(qz); else if(a==='host')window.open('quiz-host.html?quiz='+qz.id,'_blank'); }; }); });
+        if(a==='open'){quiz=qz;renderQuestions();} else if(a==='edit')quizEditor(qz); else if(a==='del')delQuiz(qz); else if(a==='results')showResults(qz); else if(a==='host')window.open('quiz-host.html?quiz='+qz.id,'_blank'); }; }); });
   }
   function quizEditor(item){
     el('modal-box').innerHTML='<h3>'+(item?'Edit ':'New ')+'quiz</h3>'
@@ -860,6 +861,16 @@ var QuizStudio = (function(){
     closeModal(); renderQuizzes(); toast('Saved');
   }
   async function delQuiz(item){ if(!confirm('Delete “'+item.title+'” and its questions?'))return; var r=await sb.from('quizzes').delete().eq('id',item.id); if(r.error){toast('Delete failed: '+r.error.message,true);return;} renderQuizzes(); toast('Deleted'); }
+  async function showResults(qz){
+    el('modal-box').innerHTML='<h3>Results — '+esc(qz.title)+'</h3><div id="res-list"><div class="empty">Loading…</div></div><div class="modal-acts"><button class="btn ghost" id="res-close">Close</button></div>';
+    modal().classList.add('open'); el('res-close').onclick=closeModal;
+    var r=await sb.from('quiz_results').select('*').eq('quiz_id',qz.id).order('played_at',{ascending:false}).limit(30);
+    if(r.error){ el('res-list').innerHTML='<div class="empty">'+(/relation|table/i.test(r.error.message)?'Run <code>quiz-results.sql</code> to enable history.':'Load failed.')+'</div>'; return; }
+    var rows=r.data||[];
+    if(!rows.length){ el('res-list').innerHTML='<div class="empty">No games played yet.</div>'; return; }
+    el('res-list').innerHTML=rows.map(function(x){ var sc=Array.isArray(x.scores)?x.scores:[], win=sc[0]; var d=''; try{d=new Date(x.played_at).toLocaleString();}catch(e){d=x.played_at;}
+      return '<div class="row"><div class="info"><h4>'+esc(d)+'</h4><div class="count">'+x.player_count+' player'+(x.player_count===1?'':'s')+(win?(' · 🥇 '+esc(win.name)+' ('+win.score+')'):'')+'</div></div></div>'; }).join('');
+  }
 
   async function renderQuestions(){
     var r=await sb.from('quiz_questions').select('*').eq('quiz_id',quiz.id).order('sort_order',{ascending:true});

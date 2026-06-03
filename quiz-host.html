@@ -111,7 +111,7 @@
 <script>
 var Host=(function(){
   var sb, ch, code='', quiz=null, qs=[], qi=-1, phase='lobby';
-  var scores={}, names={}, answers={}, timer=null, deadline=0;
+  var scores={}, names={}, answers={}, timer=null, deadline=0, curQ=null, lastReveal=null;
   var SHAPES=['▲','◆','●','■'];
   function el(id){return document.getElementById(id);}
   function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
@@ -135,7 +135,7 @@ var Host=(function(){
     renderQR();
     ch=sb.channel('quiz:'+code,{config:{broadcast:{self:false},presence:{key:'host'}}});
     ch.on('presence',{event:'sync'},updatePlayers);
-    ch.on('presence',{event:'join'},function(){ setTimeout(bcastState,200); });
+    ch.on('presence',{event:'join'},function(){ setTimeout(resync,200); });
     ch.on('broadcast',{event:'answer'},onAnswer);
     ch.subscribe(function(s){ if(s==='SUBSCRIBED'){ ch.track({role:'host'}); bcastState(); } });
     el('startbtn').onclick=begin; el('nextbtn').onclick=nextQ;
@@ -145,6 +145,7 @@ var Host=(function(){
   function players(){ var st=ch.presenceState(), out=[]; Object.keys(st).forEach(function(k){ var m=st[k][0]||{}; if(m.role==='player'){ out.push({key:k,name:m.name||'Player'}); names[k]=m.name||'Player'; } }); return out; }
   function updatePlayers(){ var p=players(); el('players').innerHTML=p.map(function(x){return '<span class="pchip">'+esc(x.name)+'</span>';}).join(''); el('pcount').textContent=p.length?(p.length+' player'+(p.length===1?'':'s')+' in'):'Waiting for players…'; el('startbtn').disabled=!p.length; }
   function bcastState(){ ch.send({type:'broadcast',event:'state',payload:{phase:phase,qi:qi,total:qs.length}}); }
+  function resync(){ if(phase==='question'&&curQ){ ch.send({type:'broadcast',event:'question',payload:curQ}); } else if(phase==='reveal'&&lastReveal){ ch.send({type:'broadcast',event:'reveal',payload:lastReveal}); } else { bcastState(); } }
 
   function begin(){ qi=-1; nextQ(); }
   function nextQ(){ qi++; if(qi>=qs.length){ finish(); return; } askQ(); }
@@ -155,7 +156,8 @@ var Host=(function(){
     el('qanswered').textContent='0 answered';
     el('qprompt').textContent=q.prompt;
     el('qchoices').innerHTML=q.choices.map(function(c,i){ return '<div class="choice c'+i+'"><span class="shape">'+SHAPES[i]+'</span><span>'+esc(c)+'</span></div>'; }).join('');
-    ch.send({type:'broadcast',event:'question',payload:{i:qi,num:qi+1,total:qs.length,prompt:q.prompt,choices:q.choices,time:q.time_limit_s}});
+    curQ={i:qi,num:qi+1,total:qs.length,prompt:q.prompt,choices:q.choices,time:q.time_limit_s};
+    ch.send({type:'broadcast',event:'question',payload:curQ});
     var ms=(q.time_limit_s||20)*1000; deadline=Date.now()+ms;
     clearInterval(timer);
     timer=setInterval(function(){ var left=Math.max(0,deadline-Date.now()); el('tbar').style.width=(left/ms*100)+'%'; if(left<=0){ clearInterval(timer); reveal(); } },120);
@@ -174,7 +176,8 @@ var Host=(function(){
     el('rsrc').innerHTML=q.source_url?('Source: <a href="'+esc(q.source_url)+'" target="_blank" rel="noopener">'+esc(q.source_url)+'</a>'):'';
     el('rlead').innerHTML=lb.slice(0,5).map(function(p,i){ return '<div class="lrow"><span class="rk">'+(i+1)+'</span><span class="nm">'+esc(p.name)+'</span><span class="sc">'+p.score+'</span></div>'; }).join('');
     el('nextbtn').textContent=(qi>=qs.length-1)?'See final scores':'Next';
-    ch.send({type:'broadcast',event:'reveal',payload:{i:qi,correct:q.correct_index,counts:counts,leaderboard:lb.slice(0,20)}});
+    lastReveal={i:qi,correct:q.correct_index,counts:counts,leaderboard:lb.slice(0,20)};
+    ch.send({type:'broadcast',event:'reveal',payload:lastReveal});
   }
   function finish(){
     phase='ended'; var lb=leaderboard();
@@ -183,6 +186,7 @@ var Host=(function(){
     el('podium').innerHTML=order.map(function(idx){ var p=top[idx]; if(!p)return ''; var medal=idx===0?'🥇':idx===1?'🥈':'🥉'; return '<div class="pod p'+(idx+1)+'"><div class="medal">'+medal+'</div><div class="nm">'+esc(p.name)+'</div><div class="sc">'+p.score+'</div></div>'; }).join('');
     el('finallead').innerHTML=lb.map(function(p,i){ return '<div class="lrow"><span class="rk">'+(i+1)+'</span><span class="nm">'+esc(p.name)+'</span><span class="sc">'+p.score+'</span></div>'; }).join('');
     ch.send({type:'broadcast',event:'final',payload:{podium:top,leaderboard:lb.slice(0,20)}});
+    try{ sb.from('quiz_results').insert({quiz_id:quiz.id,quiz_title:quiz.title,code:code,player_count:lb.length,scores:lb.slice(0,50)}).then(function(){},function(){}); }catch(e){}
   }
   return { start:start };
 })();
