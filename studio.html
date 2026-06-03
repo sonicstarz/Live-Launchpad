@@ -426,10 +426,26 @@ var RocketStudio = (function(){
       +field('Subtitle','rk-subtitle',item&&item.subtitle)
       +field('Height (m)','rk-height',item&&item.height_m)
       +'<div class="field"><label>Model kind</label><input id="rk-kind" list="kind-list" value="'+esc((item&&item.model_kind)||'procedural')+'"><datalist id="kind-list"><option value="procedural"><option value="glb"></datalist></div>'
-      +field('Model URL','rk-modelurl',item&&item.model_url,'(.glb path; only if model kind = glb)')
+      +field('Model URL','rk-modelurl',item&&item.model_url,'(.glb path; auto-filled by the upload below)')
+      +'<div class="field"><label>Upload 3D model <span style="text-transform:none;color:var(--txt3)">(.glb — uploads to storage &amp; fills the URL, switches kind to glb)</span></label><input type="file" id="rk-modelfile" accept=".glb,.gltf,model/gltf-binary"><div id="rk-uploadmsg" style="font-size:12px;color:var(--txt3);margin-top:6px"></div></div>'
       +'<div class="field"><label style="text-transform:none"><input type="checkbox" id="rk-pub" '+((!item||item.published)?'checked':'')+'> Published (visible on the public page)</label></div>'
       +'<div class="modal-acts"><button class="btn ghost" id="rk-cancel">Cancel</button><button class="btn" id="rk-save">Save</button></div>';
-    modal().classList.add('open'); el('rk-cancel').onclick=closeModal; el('rk-save').onclick=function(){ saveRocket(item); }; el('rk-name').focus();
+    modal().classList.add('open'); el('rk-cancel').onclick=closeModal; el('rk-save').onclick=function(){ saveRocket(item); };
+    el('rk-modelfile').onchange=function(){ uploadModel(); }; el('rk-name').focus();
+  }
+  async function uploadModel(){
+    var inp=el('rk-modelfile'), f=inp&&inp.files&&inp.files[0]; if(!f) return;
+    var umsg=el('rk-uploadmsg');
+    if(f.size > 60*1024*1024){ umsg.style.color='#ff5d5d'; umsg.textContent='That file is '+(f.size/1048576).toFixed(0)+' MB — keep models under ~60 MB for fast loading.'; inp.value=''; return; }
+    var slug=(el('rk-slug').value.trim()||'model').toLowerCase().replace(/[^a-z0-9-]/g,'-');
+    var ext=(f.name.split('.').pop()||'glb').toLowerCase();
+    var path=slug+'-'+Date.now()+'.'+ext;
+    umsg.style.color='var(--txt3)'; umsg.textContent='Uploading '+f.name+' ('+(f.size/1048576).toFixed(1)+' MB)…';
+    var up=await sb.storage.from('rocket-models').upload(path, f, { upsert:true, contentType:f.type||'model/gltf-binary' });
+    if(up.error){ umsg.style.color='#ff5d5d'; umsg.textContent='Upload failed: '+up.error.message+(/bucket/i.test(up.error.message)?' — did you run rocket-models-storage.sql?':''); return; }
+    var url=sb.storage.from('rocket-models').getPublicUrl(path).data.publicUrl;
+    el('rk-modelurl').value=url; el('rk-kind').value='glb';
+    umsg.style.color='var(--green)'; umsg.textContent='Uploaded ✓ — URL filled in and kind set to “glb”. Click Save.';
   }
   async function saveRocket(item){
     var name=el('rk-name').value.trim(), slug=el('rk-slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'-');
