@@ -212,6 +212,18 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   .g-sw-btn{width:32px;height:32px;font-size:18px}
   .g-sw-name{font-size:12px;min-width:96px}
 }
+/* ===== Present mode (projector / classroom pop-out via explorer.html?present=1) ===== */
+body.present .nav,body.present footer,body.present .eyebrow,body.present h1,body.present .sub,body.present .gbar{display:none!important}
+body.present .wrap{max-width:none;margin:0;padding:0}
+body.present .stage{grid-template-columns:1fr;gap:0;margin:0;height:100vh}
+body.present .viewer{min-height:0;height:100vh;border:0;border-radius:0}
+body.present #three{height:100vh!important}
+body.present .panel{display:none}
+body.present .picker{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:60;margin:0;max-width:92vw;overflow-x:auto;flex-wrap:nowrap;background:rgba(7,10,16,.82);border:1px solid var(--line2);border-radius:11px;padding:6px;backdrop-filter:blur(6px)}
+body.present .g-info{display:block;left:18px;bottom:18px}
+.present-fs{display:none}
+body.present .present-fs{display:inline-flex;align-items:center;gap:7px;position:fixed;top:12px;right:14px;z-index:60;background:rgba(7,10,16,.82);border:1px solid var(--line2);color:var(--txt2);border-radius:10px;padding:9px 14px;font-family:var(--mono);font-size:12px;cursor:pointer;backdrop-filter:blur(6px)}
+.present-fs:hover{color:var(--amber);border-color:var(--amber)}
 </style>
 </head>
 <body>
@@ -224,6 +236,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   <div class="picker" id="picker"></div>
   <div class="gbar">
     <button class="gbtn" id="gestureBtn">✋ Gesture Mode</button>
+    <button class="gbtn" id="presentBtn" style="background:transparent;color:var(--amber);border:1px solid var(--amber)">⤢ Present</button>
     <span class="gprivacy">Control the rocket with hand gestures. Camera runs only in your browser — nothing is uploaded. Mouse &amp; touch always work.</span>
     <div class="guide">
       <span class="g-chip"><span class="ico">✋</span><span class="txt"><b>Hold to arm</b>open palm ~1s</span></span>
@@ -1065,6 +1078,22 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   var f=document.getElementById('site-footer');
   if(f)f.outerHTML='<footer><div class="wrap"><b>LIVE LAUNCHPAD</b> — mission control for the orbital era. Models are illustrative; descriptions human-authored.<br>An independent project · <a href="about.html">About</a> · <a href="learn.html">Learning Center</a></div></footer>';
   var c=document.getElementById('stars');if(c){var s='';for(var i=0;i<70;i++){var z=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);s+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+z+'px;height:'+z+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=s;}
+})();
+</script>
+<button class="present-fs" id="presentFs">⛶ Fullscreen</button>
+<script src="ll-present.js" defer></script>
+<script>
+(function(){
+  var qs=new URLSearchParams(location.search);
+  if(qs.get('present')){
+    document.body.classList.add('present');
+    var slug=qs.get('rocket');
+    if(slug){ var n=0,iv=setInterval(function(){ var b=document.querySelector('.pick[data-slug="'+slug+'"]'); if(b){ b.click(); clearInterval(iv);} if(++n>50)clearInterval(iv); },150); }
+  }
+  var pb=document.getElementById('presentBtn');
+  if(pb) pb.onclick=function(){ var on=document.querySelector('.pick.on'); var s=on?on.getAttribute('data-slug'):''; var u='explorer.html?present=1'+(s?'&rocket='+encodeURIComponent(s):''); if(window.LLPresent) LLPresent.open(u); else window.open(u,'llpresent','popup,width=1280,height=800'); };
+  var fs=document.getElementById('presentFs');
+  if(fs) fs.onclick=function(){ var el=document.documentElement, fn=el.requestFullscreen||el.webkitRequestFullscreen; if(document.fullscreenElement) document.exitFullscreen(); else if(fn) fn.call(el); };
 })();
 </script>
 </body>

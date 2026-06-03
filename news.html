@@ -152,11 +152,12 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     <div class="vframe" id="vframe"></div>
     <div class="vmodal-bar">
       <span class="vt" id="vmTitle"></span>
-      <span class="vactions"><a id="vmYt" href="#" target="_blank" rel="noopener">YouTube ↗</a><button class="vmodal-x" id="vmClose">✕ Close</button></span>
+      <span class="vactions"><button class="vmodal-x" id="vmPresent">⤢ Present</button><a id="vmYt" href="#" target="_blank" rel="noopener">YouTube ↗</a><button class="vmodal-x" id="vmClose">✕ Close</button></span>
     </div>
   </div>
 </div>
 <div id="site-footer"></div>
+<script src="ll-present.js" defer></script>
 <script>
 const FALLBACK=[
   {title:"NASA to announce Artemis 3 astronauts on June 9",news_site:"Space.com",summary:"NASA will reveal the four astronauts who will fly aboard Artemis 3, the mission set to return humans to the lunar surface, currently scheduled for mid-2027.",url:"https://www.space.com/space-exploration/artemis/nasa-will-reveal-the-artemis-3-astronauts-on-june-9",published_at:"2026-05-27T00:00:00Z",image_url:null},
@@ -241,6 +242,8 @@ function openPlayer(vid,title,url){
   document.getElementById('vframe').innerHTML='<iframe src="https://www.youtube.com/embed/'+vid+'?autoplay=1&rel=0&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
   document.getElementById('vmTitle').textContent=title||'';
   document.getElementById('vmYt').href=url||('https://www.youtube.com/watch?v='+vid);
+  var pres=document.getElementById('vmPresent');
+  if(pres) pres.onclick=function(){ if(window.LLPresent) LLPresent.open('present.html?type=video&id='+vid+'&title='+encodeURIComponent(title||'')); };
   document.getElementById('videoModal').classList.add('open');
 }
 function closePlayer(){ document.getElementById('videoModal').classList.remove('open'); document.getElementById('vframe').innerHTML=''; }

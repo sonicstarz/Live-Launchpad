@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Present — Live Launchpad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chivo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:#04060c;color:#e6edf3;font-family:'Chivo',sans-serif;display:flex;flex-direction:column;overflow:hidden}
+  .pbar{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid #1d2533;background:#0a0d13;flex:none}
+  .pbar .brand{font-weight:900;letter-spacing:-.01em;white-space:nowrap}
+  .pbar .blink{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ddc84;box-shadow:0 0 8px #3ddc84;margin-right:6px}
+  .pbar .title{font-family:'Space Mono',monospace;font-size:13px;color:#8a97a8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pbar .sp{margin-left:auto}
+  .pbtn{background:#ffb627;color:#1a1205;border:none;border-radius:9px;font-family:'Space Mono',monospace;font-weight:700;font-size:13px;padding:9px 16px;cursor:pointer;white-space:nowrap}
+  .pbtn:hover{filter:brightness(1.05)}
+  .pstage{flex:1;position:relative;background:#000}
+  .pstage iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .pempty{display:grid;place-items:center;height:100%;color:#586677;font-family:'Space Mono',monospace;font-size:14px}
+  body:fullscreen .pbar{display:none}
+</style>
+</head>
+<body>
+  <div class="pbar">
+    <span class="brand"><span class="blink"></span>🚀 LIVE LAUNCHPAD</span>
+    <span class="title" id="ptitle"></span>
+    <span class="sp"></span>
+    <button class="pbtn" id="pfs">⛶ Fullscreen</button>
+  </div>
+  <div class="pstage" id="pstage"><div class="pempty">Loading…</div></div>
+<script>
+(function(){
+  var p=new URLSearchParams(location.search);
+  var type=p.get('type'), id=p.get('id')||'', title=p.get('title')||'';
+  var st=document.getElementById('pstage');
+  document.getElementById('ptitle').textContent=title;
+  if(title) document.title='Present · '+title;
+  if(type==='video' && /^[\w-]{11}$/.test(id)){
+    st.innerHTML='<iframe src="https://www.youtube.com/embed/'+id+'?autoplay=1&rel=0&playsinline=1&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
+  } else {
+    st.innerHTML='<div class="pempty">Nothing to present.</div>';
+  }
+  document.getElementById('pfs').onclick=function(){
+    var el=document.documentElement, fn=el.requestFullscreen||el.webkitRequestFullscreen;
+    if(document.fullscreenElement){ document.exitFullscreen(); } else if(fn){ fn.call(el); }
+  };
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&document.fullscreenElement) document.exitFullscreen(); });
+})();
+</script>
+</body>
+</html>
