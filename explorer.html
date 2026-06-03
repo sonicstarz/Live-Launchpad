@@ -231,7 +231,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       <span class="g-chip"><span class="ico">🙌</span><span class="txt"><b>Zoom</b>two hands — apart/together</span></span>
       <span class="g-chip"><span class="ico">☝️</span><span class="txt"><b>Cursor</b>point one finger</span></span>
       <span class="g-chip"><span class="ico">🤏</span><span class="txt"><b>Select</b>point + pinch</span></span>
-      <span class="g-chip"><span class="ico">✊</span><span class="txt"><b>Switch model</b>make a fist</span></span>
+      <span class="g-chip"><span class="ico">🚀</span><span class="txt"><b>Switch model</b>tap ‹ › in view</span></span>
     </div>
   </div>
   <div class="stage">
@@ -252,7 +252,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
         <div class="g-row" data-act="zoom"><span class="ico">🙌</span><span class="txt"><b>Zoom</b>two hands — apart out, together in</span></div>
         <div class="g-row" data-act="cursor"><span class="ico">☝️</span><span class="txt"><b>Cursor</b>point with index</span></div>
         <div class="g-row" data-act="select"><span class="ico">🤏</span><span class="txt"><b>Select part</b>point + pinch</span></div>
-        <div class="g-row" data-act="model"><span class="ico">✊</span><span class="txt"><b>Next rocket</b>make a fist (or tap ‹ ›)</span></div>
+        <div class="g-row" data-act="switch"><span class="ico">🚀</span><span class="txt"><b>Switch rocket</b>tap ‹ › up top</span></div>
       </div>
       <div class="g-cam" id="gCam">
         <span class="cam-h">Local preview</span>
@@ -293,7 +293,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       <div class="g-demo"><div class="hands"><span class="hand orbit">🖐️</span></div><b>Orbit</b><span>move one open hand — fling it and it keeps spinning</span></div>
       <div class="g-demo"><div class="hands two"><span class="hand zl">✋</span><span class="hand zr">✋</span></div><b>Zoom</b><span>two hands — apart to pull out, together to push in</span></div>
       <div class="g-demo"><div class="hands"><span class="hand pt">☝️</span><span class="hand pn">🤏</span></div><b>Select</b><span>point a finger, then pinch to open a part</span></div>
-      <div class="g-demo"><div class="hands"><span class="hand orbit">✊</span></div><b>Switch</b><span>make a fist to flip to the next rocket</span></div>
+      <div class="g-demo"><div class="hands"><span style="font-size:22px">🚀 ‹ ›</span></div><b>Switch</b><span>tap the ‹ › buttons on screen to change rocket</span></div>
     </div>
     <ul class="g-tips">
       <li><span>💡</span> Bright, even lighting on your hands works best</li>
@@ -339,21 +339,41 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   }
 
   /* ---------- three.js ---------- */
+  /* lightweight image-based lighting: a vertical sky→ground gradient with a soft
+     key highlight, used as scene.environment so metallic surfaces have something
+     to reflect (otherwise high-metalness materials render nearly black). */
+  function makeEnvMap(){
+    var c=document.createElement('canvas'); c.width=32; c.height=128; var x=c.getContext('2d');
+    var g=x.createLinearGradient(0,0,0,128);
+    g.addColorStop(0,'#3b4f6b'); g.addColorStop(0.42,'#121a26'); g.addColorStop(1,'#04070d');
+    x.fillStyle=g; x.fillRect(0,0,32,128);
+    var rg=x.createRadialGradient(20,26,2,20,26,46); rg.addColorStop(0,'rgba(255,250,238,0.95)'); rg.addColorStop(1,'rgba(255,250,238,0)');
+    x.fillStyle=rg; x.fillRect(0,0,32,128);
+    var rg2=x.createRadialGradient(8,60,2,8,60,40); rg2.addColorStop(0,'rgba(120,160,255,0.35)'); rg2.addColorStop(1,'rgba(120,160,255,0)');
+    x.fillStyle=rg2; x.fillRect(0,0,32,128);
+    var tex=new THREE.CanvasTexture(c); tex.mapping=THREE.EquirectangularReflectionMapping; tex.encoding=THREE.sRGBEncoding;
+    return tex;
+  }
   function initThree(){
     var cv=el('three'), w=cv.clientWidth||800, h=600;
     renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
     renderer.setSize(w,h,false);
+    renderer.outputEncoding=THREE.sRGBEncoding;
+    renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure=1.08;
     scene=new THREE.Scene();
+    scene.environment=makeEnvMap();   // gradient IBL so metals read as metal
     camera=new THREE.PerspectiveCamera(42,w/h,0.1,500);
     camera.position.set(22,8,34);
     controls=new THREE.OrbitControls(camera,cv);
     controls.enableDamping=true; controls.dampingFactor=0.08;
     controls.minDistance=14; controls.maxDistance=80; controls.target.set(0,11,0);
-    scene.add(new THREE.AmbientLight(0x9fb4d4,0.55));
-    var hemi=new THREE.HemisphereLight(0xbcd4ff,0x202830,0.6); scene.add(hemi);
-    var key=new THREE.DirectionalLight(0xffffff,1.05); key.position.set(20,30,25); scene.add(key);
-    var rim=new THREE.DirectionalLight(0xffb627,0.4); rim.position.set(-18,12,-10); scene.add(rim);
+    scene.add(new THREE.AmbientLight(0x8497b4,0.32));
+    var hemi=new THREE.HemisphereLight(0xcfe0ff,0x141a24,0.5); scene.add(hemi);
+    var key=new THREE.DirectionalLight(0xfff4e2,1.25); key.position.set(24,34,20); scene.add(key);
+    var fill=new THREE.DirectionalLight(0x9fc0ff,0.5); fill.position.set(-22,6,18); scene.add(fill);
+    var rim=new THREE.DirectionalLight(0xffb627,0.55); rim.position.set(-16,18,-22); scene.add(rim);
     cv.addEventListener('pointerdown',onDown); cv.addEventListener('pointerup',onUp);
     window.addEventListener('resize',onResize);
     animate();
@@ -411,6 +431,19 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   function ogiveGeo(rBase,len){ var p=[],N=18; for(var i=0;i<=N;i++){ var f=i/N; p.push(new THREE.Vector2(rBase*Math.sqrt(Math.max(0,1-f*f)), len*f)); } return new THREE.LatheGeometry(p,48); }
   /* weld/stringer rings up a stage */
   function weld(group,R,y0,y1,n,color){ for(var i=0;i<n;i++){ var r=new THREE.Mesh(cyl(R+0.015,R+0.015,0.05,48),mat(color||0x9aa1ab,{metal:0.6,rough:0.5})); r.position.y=y0+(y1-y0)*(n>1?i/(n-1):0); group.add(r); } }
+  /* tapered, swept fin/flap (radial in +X, chord vertical, thin tangential) */
+  function finGeo(root,tip,span,sweep,thick,rOff){
+    var s=new THREE.Shape();
+    s.moveTo(rOff,-root/2); s.lineTo(rOff+span,-tip/2+sweep); s.lineTo(rOff+span,tip/2+sweep); s.lineTo(rOff,root/2); s.closePath();
+    var geo=new THREE.ExtrudeGeometry(s,{depth:thick,bevelEnabled:true,bevelThickness:thick*0.3,bevelSize:thick*0.3,bevelSegments:1,steps:1});
+    geo.translate(0,0,-thick/2); return geo;
+  }
+  /* thin conduit/raceway hugging the hull from y0→y1 at azimuth az */
+  function raceway(group,R,y0,y1,az,w,color){
+    var len=y1-y0, my=(y0+y1)/2;
+    var rc=new THREE.Mesh(new THREE.BoxGeometry(w,len,w*0.7),mat(color||0x6f757d,{metal:0.5,rough:0.6}));
+    rc.position.set(Math.cos(az)*(R+w*0.32),my,Math.sin(az)*(R+w*0.32)); rc.lookAt(0,my,0); group.add(rc);
+  }
 
   /* ---------- procedural builders (each part = a named group; mesh_key is the contract) ---------- */
   var BUILDERS={
@@ -425,6 +458,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       var bm=new THREE.Mesh(cyl(R,R,14,48),steel()); bm.position.y=7; booster.add(bm);
       weld(booster,R,1.4,12.6,9,0x9aa1ab);
       var pipe=new THREE.Mesh(cyl(0.17,0.17,12.5,16),mat(0x9aa1ab,{metal:0.7,rough:0.4})); pipe.position.set(R-0.02,7,0); booster.add(pipe);
+      raceway(booster,R,1.6,13,Math.PI*0.92,0.13,0x8a9099); raceway(booster,R,1.6,13,Math.PI*1.08,0.1,0x8a9099);
       var hsr=new THREE.Mesh(cyl(R,R,1.3,48,true),new THREE.MeshStandardMaterial({color:0x2a2e35,metalness:0.6,roughness:0.5,side:THREE.DoubleSide})); hsr.position.y=14.5; booster.add(hsr);
       for(var v=0;v<16;v++){ var va=v/16*Math.PI*2; var bar=new THREE.Mesh(new THREE.BoxGeometry(0.1,1.15,0.1),mat(0x6f757d)); bar.position.set(Math.cos(va)*R,14.5,Math.sin(va)*R); booster.add(bar); }
       g.add(booster);
@@ -453,12 +487,14 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       for(var sv=0;sv<3;sv++){ var av=sv/3*Math.PI*2+0.5; var vb=bell(0.2,0.5,0.95,0x35393f); vb.position.set(Math.cos(av)*1.25,sBaseY-0.15,Math.sin(av)*1.25); ship.add(vb); }
       g.add(ship);
 
-      /* flaps: 2 forward (near nose), 2 aft (near base) */
+      /* flaps: 2 forward (smaller, near nose) + 2 aft (larger, near base) — tapered & swept */
       var flaps=partGroup('flaps');
-      function flap(y,sx,depth,h,w){ var fl=new THREE.Mesh(new THREE.BoxGeometry(0.34,h,w),mat(0x9aa1ab,{flat:true,metal:0.6})); fl.position.set(sx*(R+0.12),y,depth);
-        var tc=new THREE.Mesh(new THREE.BoxGeometry(0.37,h,w),tileMat); tc.position.copy(fl.position); flaps.add(fl); flaps.add(tc); }
-      flap(sBaseY+7.0, 1, 0.95, 1.9,1.4); flap(sBaseY+7.0,-1, 0.95, 1.9,1.4);
-      flap(sBaseY+1.1, 1,-0.95, 2.6,2.0); flap(sBaseY+1.1,-1,-0.95, 2.6,2.0);
+      function flap(mountY,az,root,tip,span,sweep){
+        var f=new THREE.Mesh(finGeo(root,tip,span,sweep,0.34,R-0.05),mat(0xaab0b8,{metal:0.55,rough:0.5}));
+        f.rotation.y=-az; f.position.y=mountY; flaps.add(f);
+      }
+      flap(sBaseY+6.6,  0.5, 1.7,0.9,1.0,0.45); flap(sBaseY+6.6, -0.5, 1.7,0.9,1.0,0.45); // forward
+      flap(sBaseY+1.4,  0.5, 2.5,1.3,1.4,0.65); flap(sBaseY+1.4, -0.5, 2.5,1.3,1.4,0.65); // aft
       g.add(flaps);
 
       /* nose */
@@ -485,8 +521,9 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       g.add(eng);
 
       var strakes=partGroup('strakes');
-      for(var s=0;s<4;s++){ var sa=s/4*Math.PI*2+Math.PI/4; var st=new THREE.Mesh(new THREE.BoxGeometry(0.18,2.4,1.7),mat(0x2a2e34,{flat:true})); st.position.set(Math.cos(sa)*(R+0.4),3.2,Math.sin(sa)*(R+0.4)); st.lookAt(0,3.2,0); strakes.add(st); }
-      for(var lg=0;lg<6;lg++){ var la=lg/6*Math.PI*2; var leg=new THREE.Mesh(new THREE.BoxGeometry(0.16,3.2,0.5),mat(0x33373d)); leg.position.set(Math.cos(la)*(R+0.06),2.4,Math.sin(la)*(R+0.06)); leg.lookAt(0,2.4,0); strakes.add(leg); }
+      for(var s=0;s<4;s++){ var sa=s/4*Math.PI*2+Math.PI/4; var st=new THREE.Mesh(finGeo(2.6,1.1,1.5,0.55,0.22,R-0.05),mat(0x2a2e34,{metal:0.4,rough:0.55})); st.rotation.y=-sa; st.position.y=3.2; strakes.add(st); }
+      for(var lg=0;lg<6;lg++){ var la=lg/6*Math.PI*2; var leg=new THREE.Mesh(new THREE.BoxGeometry(0.16,3.4,0.5),mat(0x33373d)); leg.position.set(Math.cos(la)*(R+0.06),2.5,Math.sin(la)*(R+0.06)); leg.lookAt(0,2.5,0); strakes.add(leg); }
+      raceway(strakes,R,1,14,Math.PI*0.5,0.18,0x33373d);
       g.add(strakes);
 
       var stage2=partGroup('stage2'); var interH=15.2;
@@ -509,6 +546,8 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       var cm=new THREE.Mesh(cyl(1.9,1.9,17,48),mat(ORANGE,{metal:0.12,rough:0.82})); cm.position.y=9; core.add(cm);
       var itb=new THREE.Mesh(cyl(1.93,1.93,1.6,48),mat(0x8a4517,{rough:0.85})); itb.position.y=10.6; core.add(itb);
       var ctop=new THREE.Mesh(cyl(1.4,1.9,1.8,48),mat(ORANGE,{rough:0.8})); ctop.position.y=18.4; core.add(ctop);
+      raceway(core,1.9,1.4,17.4,Math.PI*1.5,0.34,0x8a4517);     // LH2 feedline / systems tunnel
+      raceway(core,1.9,2.0,16.8,Math.PI*1.5+0.32,0.12,0x5f3110); // cable conduit beside it
       g.add(core);
 
       var rs25=partGroup('rs25');
@@ -523,7 +562,10 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
         var nose=new THREE.Mesh(ogiveGeo(0.95,2.6),mat(0xd9d6d0)); nose.position.set(x,16,0); srb.add(nose);
         var frus=new THREE.Mesh(cyl(0.58,0.95,1.2,32),mat(0x44474d)); frus.position.set(x,0.4,0); srb.add(frus);
         var noz=bell(0.34,0.6,1.2,0x2b2f36); noz.position.set(x,-0.2,0); srb.add(noz);
-        var strut=new THREE.Mesh(new THREE.BoxGeometry(1.1,0.16,0.16),mat(0x7a7d83)); strut.position.set(sx*1.95,6,0); srb.add(strut);
+        var strutT=new THREE.Mesh(new THREE.BoxGeometry(1.1,0.16,0.16),mat(0x7a7d83)); strutT.position.set(sx*1.95,11.5,0); srb.add(strutT);
+        var strutB=new THREE.Mesh(new THREE.BoxGeometry(1.1,0.16,0.16),mat(0x7a7d83)); strutB.position.set(sx*1.95,4.5,0); srb.add(strutB);
+        var tun=new THREE.Mesh(new THREE.BoxGeometry(0.14,15,0.2),mat(0xb9b6b0)); tun.position.set(x+sx*0.95,8,0); srb.add(tun);            // systems tunnel (outboard)
+        for(var bs=0;bs<4;bs++){ var ba=bs/4*Math.PI*2; var bsm=new THREE.Mesh(new THREE.ConeGeometry(0.09,0.34,12),mat(0x3a3d42)); bsm.position.set(x+Math.cos(ba)*0.5,15.4,Math.sin(ba)*0.5); bsm.rotation.set(Math.PI*0.78,0,-ba); srb.add(bsm); } // fwd separation motors
       });
       g.add(srb);
 
@@ -658,7 +700,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     /* tunables */
     var ARM_HOLD_MS=800, ARM_MOVE_TOL=0.06, HAND_LOST_MS=500,
         PINCH_ON=0.32, PINCH_OFF=0.50, SELECT_COOLDOWN=420,
-        ORBIT_GAIN=3.4, INFER_MS=24, POSE_DEBOUNCE=2,
+        ORBIT_GAIN=3.4, INFER_MS=24, POSE_DEBOUNCE=3,
         SEP_MIN=0.16, SEP_MAX=0.82, IDLE_SPIN=0.0013;
 
     /* runtime state */
@@ -666,7 +708,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     var STATE='IDLE', armAccum=0, armAnchor=null, lastArmT=0, lastSeen=0;
     var pinchActive=false, orbitAnchor=null, lastSelect=0, cx=null, cy=null, wasPinch=false;
     var curAction='none', gVelT=0, gVelP=0, intro=null;
-    var poseFamily='open', poseCand=null, poseCandN=0, fistHold=0;
+    var poseFamily='open', poseCand=null, poseCandN=0, twoHandFrames=0;
     var isMobile=(window.matchMedia && (window.matchMedia('(pointer:coarse)').matches)) || window.innerWidth<760;
 
     var E={ btn:el('gestureBtn'), exit:el('gExit'), viewer:el('viewer'), video:el('gVideo'),
@@ -807,24 +849,27 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     function handleResult(res,t){
       var hands=(res&&res.landmarks)||[];
       if(hands.length===0){
-        curAction='none'; fistHold=0; E.cursor.style.display='none'; hideZoomBar();
+        curAction='none'; twoHandFrames=0; E.cursor.style.display='none'; hideZoomBar();
         if(t-lastSeen>HAND_LOST_MS) disarm();
         return;
       }
       lastSeen=t;
 
-      /* ---- TWO-HAND ZOOM (only once armed) ---- */
+      /* ---- TWO-HAND ZOOM (only once armed; needs 2 steady frames to engage) ---- */
       if(hands.length>=2 && STATE==='ARMED'){
-        orbitAnchor=null; wasPinch=false; poseFamily='open'; fistHold=0;
-        var c0=center(hands[0]), c1=center(hands[1]);
-        var sep=fSep.f(Math.hypot(c0.x-c1.x,c0.y-c1.y),t);
-        var k=clamp((sep-SEP_MIN)/(SEP_MAX-SEP_MIN),0,1);  // 0 together .. 1 apart
-        gTgt.radius=lerp(controls.minDistance,controls.maxDistance,k);
-        curAction='zoom'; E.cursor.style.display='none';
-        showZoomBar(1-k);
-        setAction('zoom');
+        twoHandFrames++;
+        orbitAnchor=null; wasPinch=false; poseFamily='open'; gVelT=0; gVelP=0;  // freeze spin → steady zoom
+        E.cursor.style.display='none';
+        if(twoHandFrames>=2){
+          var c0=center(hands[0]), c1=center(hands[1]);
+          var sep=fSep.f(Math.hypot(c0.x-c1.x,c0.y-c1.y),t);
+          var k=clamp((sep-SEP_MIN)/(SEP_MAX-SEP_MIN),0,1);  // 0 together .. 1 apart
+          gTgt.radius=lerp(controls.minDistance,controls.maxDistance,k);
+          curAction='zoom'; showZoomBar(1-k); setAction('zoom');
+        } else { curAction='none'; }
         return;
       }
+      twoHandFrames=0;
       hideZoomBar();
 
       /* ---- ONE HAND ---- */
@@ -842,8 +887,9 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
       var iExt=extended(lm,LM.INDEX,LM.INDEX_PIP);
       var openPalm=iExt && othersUp>=2 && !pinchActive;
 
-      /* pose-family debounce: only switch open / point / fist after N consistent frames */
-      var raw=(othersUp>=2)?'open':(iExt?'point':'fist');
+      /* pose-family debounce: only switch open / point / none after N consistent frames
+         ('none' = ambiguous/closed hand → hold position, don't guess) */
+      var raw=(othersUp>=2)?'open':(iExt && othersUp<=1 ? 'point':'none');
       if(raw===poseFamily){ poseCand=null; poseCandN=0; }
       else { if(raw===poseCand) poseCandN++; else { poseCand=raw; poseCandN=1; }
              if(poseCandN>=POSE_DEBOUNCE){ poseFamily=raw; poseCand=null; poseCandN=0; } }
@@ -865,10 +911,10 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
         return;
       }
 
-      /* ---- ARMED: orbit (open hand) · cursor/select (point) · switch model (fist) ---- */
+      /* ---- ARMED: orbit (open hand) · cursor/select (point) · hold (anything else) ---- */
       var action='none';
       if(poseFamily==='open'){
-        fistHold=0; E.cursor.style.display='none'; wasPinch=false;
+        E.cursor.style.display='none'; wasPinch=false;
         if(pinchActive){ action='none'; orbitAnchor=null; }   // closed/ambiguous → let momentum coast
         else {
           action='orbit';
@@ -876,19 +922,18 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
           gTgt.theta=orbitAnchor.theta+(orbitAnchor.hx-palm.x)*ORBIT_GAIN;   // mirror X
           gTgt.phi=clamp(orbitAnchor.phi+(palm.y-orbitAnchor.hy)*ORBIT_GAIN, 0.20, Math.PI-0.20);
         }
-      } else if(poseFamily==='fist'){
-        action='model'; orbitAnchor=null; wasPinch=false; E.cursor.style.display='none';
-        fistHold++; if(fistHold===8) cycleModel(1);   // ~200ms hold → next rocket (fires once)
-      } else {
-        fistHold=0; orbitAnchor=null;
+      } else if(poseFamily==='point'){
+        orbitAnchor=null;
         action='cursor';
         moveCursor(idx);
         E.cursor.classList.toggle('pinch', pinchActive);
         if(pinchActive && !wasPinch && (t-lastSelect)>SELECT_COOLDOWN){ lastSelect=t; action='select'; fireSelect(); }
         wasPinch=pinchActive;
+      } else {
+        orbitAnchor=null; wasPinch=false; E.cursor.style.display='none'; action='none';  // ambiguous → hold/coast
       }
 
-      curAction=(action==='model')?'none':action;   // model switch shouldn't drive the camera
+      curAction=action;
       setAction(action);
     }
 
@@ -957,8 +1002,8 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
     }
     function setAction(a){ E.hudAct.textContent = a==='none'?'':'· '+a.toUpperCase(); highlightLegend(a==='select'?'select':a); }
     function resetArming(){ armAnchor=null; armAccum=0; E.calibFill.style.height='0%'; if(STATE==='ARMING') setState('IDLE'); }
-    function arm(){ setState('ARMED'); E.calibLabel.textContent='Tracking armed'; orbitAnchor=null; wasPinch=false; poseFamily='open'; fistHold=0; }
-    function disarm(){ if(STATE!=='IDLE') setState('IDLE'); resetArming(); curAction='none'; fistHold=0; setAction('none'); }
+    function arm(){ setState('ARMED'); E.calibLabel.textContent='Tracking armed'; orbitAnchor=null; wasPinch=false; poseFamily='open'; twoHandFrames=0; }
+    function disarm(){ if(STATE!=='IDLE') setState('IDLE'); resetArming(); curAction='none'; twoHandFrames=0; setAction('none'); }
 
     window.addEventListener('pagehide', function(){ if(gestureOn) exitGesture(); });
   })();
