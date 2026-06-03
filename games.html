@@ -517,11 +517,11 @@ function startFlappy(){
   const cv=$('gameCanvas'),ctx=cv.getContext('2d');
   const W=cv.width,H=cv.height;
   let y=H/2,vy=0,score=0,dead=false,started=false,t=0;
-  const GRAV=0.45,FLAP=-7.2,SHIP_X=90,SHIP_W=30,SHIP_H=60;
+  const GRAV=0.45,FLAP=-7.2,SHIP_X=90,SHIP_W=12,SHIP_H=24,GAP=100;
   let pipes=[];
-  function reset(){y=H/2;vy=0;score=0;dead=false;started=false;t=0;pipes=[{x:W+40,gap:H*0.40,gy:120}];}
+  function reset(){y=H/2;vy=0;score=0;dead=false;started=false;t=0;pipes=[{x:W+40,gap:GAP,gy:(H-GAP)/2}];}
   reset();
-  function addPipe(){const gap=Math.max(120,150-score*3);const gy=60+Math.random()*(H-gap-120);pipes.push({x:W+40,gap:gap,gy:gy,scored:false});}
+  function addPipe(){const gap=GAP;const gy=50+Math.random()*(H-gap-100);pipes.push({x:W+40,gap:gap,gy:gy,scored:false});}
   function flap(){if(dead){cleanup();startFlappy();return;}started=true;vy=FLAP;}
   const keyHandler=function(e){if(e.key===' '||e.code==='Space'){e.preventDefault();flap();}};
   document.addEventListener('keydown',keyHandler);
@@ -565,7 +565,7 @@ function startFlappy(){
       for(let yy=p.gy+p.gap+18;yy<H-10;yy+=18)ctx.fillRect(p.x+4,yy,42,3);
     });
     // starship with flame when rising
-    if(started&&vy<0){ctx.fillStyle='#ff7a3c';ctx.shadowColor='#ffb627';ctx.shadowBlur=14;ctx.fillRect(SHIP_X+9,y+SHIP_H,12,10+Math.random()*8);ctx.shadowBlur=0;}
+    if(started&&vy<0){ctx.fillStyle='#ff7a3c';ctx.shadowColor='#ffb627';ctx.shadowBlur=14;ctx.fillRect(SHIP_X+SHIP_W/2-2,y+SHIP_H,4,6+Math.random()*5);ctx.shadowBlur=0;}
     starshipSprite(ctx,SHIP_X,y,SHIP_W/5);
     if(!started){ctx.fillStyle='#fff';ctx.font='10px "Press Start 2P",monospace';ctx.textAlign='center';ctx.fillText('SPACE TO FLAP',W/2,H*0.3);}
   }
