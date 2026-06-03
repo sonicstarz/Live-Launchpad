@@ -195,6 +195,7 @@ body.compact .row .thumb{width:84px;height:47px}
       <div class="side-group">Content</div>
       <button class="side-item on" data-view="learning"><span class="ic">📚</span> Learning Center<span class="hint">libraries · courses · videos</span></button>
       <button class="side-item" data-view="rockets"><span class="ic">🚀</span> Rocket Explorer<span class="hint">rockets · parts · videos</span></button>
+      <button class="side-item" data-view="channels"><span class="ic">🎬</span> Videos<span class="hint">curated YouTube channels</span></button>
       <div class="side-group">System</div>
       <button class="side-item" data-view="settings"><span class="ic">⚙</span> Settings<span class="hint">session · backend · appearance</span></button>
     </div>
@@ -217,6 +218,10 @@ body.compact .row .thumb{width:84px;height:47px}
       <div id="rocket-wrap" class="view" hidden>
         <div class="studio-msg" id="rk-msg"></div>
         <div id="rk-host"></div>
+      </div>
+      <div id="channels-wrap" class="view" hidden>
+        <div class="studio-msg" id="chan-msg"></div>
+        <div id="chan-host"></div>
       </div>
       <div id="settings-wrap" class="view" hidden></div>
     </div>
@@ -650,17 +655,91 @@ var RocketStudio = (function(){
   return { init:init };
 })();
 
+/* ===== VIDEO CHANNELS EDITOR (News → Videos feed) ===== */
+var VideoChannels = (function(){
+  var sb, host, msg, inited=false, list=[];
+  function el(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
+  function toast(t,err){ if(!msg)return; msg.style.color=err?'#ff5d5d':'var(--accent)'; msg.textContent=t||''; if(t){var c=t;setTimeout(function(){if(msg.textContent===c)msg.textContent='';},3000);} }
+  function modal(){return el('modal');} function closeModal(){modal().classList.remove('open');}
+
+  async function load(){
+    var r=await sb.from('video_channels').select('*').order('sort_order',{ascending:true});
+    if(r.error){ toast('Load failed: '+r.error.message+(/relation|table/i.test(r.error.message)?' — run video-channels.sql':''),true); list=[]; } else list=r.data||[];
+    render();
+  }
+  function render(){
+    var h='<div class="crumb"><span class="cur">Video channels</span></div>';
+    h+='<div class="addbar"><button class="btn" id="ch-add">+ Add channel</button></div>';
+    h+='<div style="font-family:var(--mono);font-size:12px;color:var(--txt3);margin-bottom:14px;line-height:1.6">These feed the public <b>News → Videos</b> page. Disabled channels are skipped. Optional keywords (CSV) keep only matching titles — useful for broader channels.</div>';
+    if(!list.length) h+='<div class="empty">No channels yet — add one, or run <code>video-channels.sql</code> to seed the defaults.</div>';
+    list.forEach(function(c,i){
+      h+='<div class="row" data-i="'+i+'"><div class="info"><h4>'+esc(c.name)+(c.enabled?'':' <span style="color:var(--txt3)">· off</span>')+'</h4><div class="count">'+esc(c.channel_id)+(c.keywords?(' · kw: '+esc(c.keywords)):'')+'</div></div>'
+        +'<div class="acts">'
+        +'<button class="iconbtn" data-act="up"'+(i===0?' disabled':'')+'>▲</button>'
+        +'<button class="iconbtn" data-act="down"'+(i===list.length-1?' disabled':'')+'>▼</button>'
+        +'<button class="iconbtn" data-act="toggle" title="Enable / disable">'+(c.enabled?'⏸':'▶')+'</button>'
+        +'<button class="iconbtn" data-act="edit" title="Edit">✎</button>'
+        +'<button class="iconbtn danger" data-act="del" title="Remove">🗑</button>'
+        +'</div></div>';
+    });
+    host.innerHTML=h;
+    el('ch-add').onclick=function(){ editor(null); };
+    host.querySelectorAll('.row').forEach(function(rw){ var i=+rw.dataset.i, c=list[i];
+      rw.querySelectorAll('[data-act]').forEach(function(b){ b.onclick=function(){ var a=b.dataset.act;
+        if(a==='edit')editor(c); else if(a==='del')del(c); else if(a==='toggle')toggle(c); else if(a==='up')reorder(i,i-1); else if(a==='down')reorder(i,i+1); }; }); });
+  }
+  function editor(item){
+    el('modal-box').innerHTML='<h3>'+(item?'Edit ':'Add ')+'channel</h3>'
+      +(item?'':'<div class="field"><label>Paste @handle or channel URL</label><div style="display:flex;gap:8px"><input id="ch-q" placeholder="@scottmanley or a youtube.com/@… URL" style="flex:1"><button class="btn ghost" id="ch-resolve" type="button">Resolve</button></div><div id="ch-rmsg" style="font-family:var(--mono);font-size:11px;color:var(--txt3);margin-top:6px;min-height:14px"></div></div>')
+      +'<div class="field"><label>Name</label><input id="ch-name" value="'+esc(item?item.name:'')+'"></div>'
+      +'<div class="field"><label>Channel ID <span style="text-transform:none;color:var(--txt3)">(UC…)</span></label><input id="ch-id" value="'+esc(item?item.channel_id:'')+'"'+(item?' readonly':'')+'></div>'
+      +'<div class="field"><label>Keywords <span style="text-transform:none;color:var(--txt3)">(optional CSV)</span></label><input id="ch-kw" value="'+esc(item&&item.keywords?item.keywords:'')+'"></div>'
+      +'<div class="field"><label style="text-transform:none"><input type="checkbox" id="ch-en" '+((!item||item.enabled)?'checked':'')+'> Enabled</label></div>'
+      +'<div class="modal-acts"><button class="btn ghost" id="ch-cancel">Cancel</button><button class="btn" id="ch-save">Save</button></div>';
+    modal().classList.add('open');
+    el('ch-cancel').onclick=closeModal; el('ch-save').onclick=function(){ save(item); };
+    var rb=el('ch-resolve'); if(rb) rb.onclick=resolve;
+  }
+  async function resolve(){
+    var q=el('ch-q').value.trim(), m=el('ch-rmsg'); if(!q)return;
+    m.style.color='var(--txt3)'; m.textContent='Resolving…';
+    try{
+      var r=await fetch('/.netlify/functions/resolve-channel?q='+encodeURIComponent(q));
+      var d=await r.json(); if(!r.ok||!d.channel_id) throw new Error(d.error||'not found');
+      el('ch-id').value=d.channel_id; if(!el('ch-name').value) el('ch-name').value=d.name||'';
+      m.style.color='var(--accent)'; m.textContent='✓ '+(d.name||d.channel_id);
+    }catch(e){ m.style.color='#ff5d5d'; m.textContent='Couldn’t resolve — paste the full channel URL or its UC… id.'; }
+  }
+  async function save(item){
+    var name=el('ch-name').value.trim(), id=el('ch-id').value.trim(), kw=el('ch-kw').value.trim(), en=el('ch-en').checked;
+    if(!name||!/^UC[\w-]{22}$/.test(id)){ toast('Need a name and a valid UC… channel id',true); return; }
+    var payload={name:name,channel_id:id,keywords:kw,enabled:en};
+    el('ch-save').disabled=true; var r;
+    if(item) r=await sb.from('video_channels').update(payload).eq('id',item.id);
+    else { payload.sort_order=list.length; r=await sb.from('video_channels').insert(payload); }
+    if(r.error){ toast('Save failed: '+r.error.message,true); el('ch-save').disabled=false; return; }
+    closeModal(); load(); toast('Saved');
+  }
+  async function toggle(c){ var r=await sb.from('video_channels').update({enabled:!c.enabled}).eq('id',c.id); if(r.error){toast('Failed: '+r.error.message,true);return;} load(); }
+  async function del(c){ if(!confirm('Remove “'+c.name+'” from the video feed?'))return; var r=await sb.from('video_channels').delete().eq('id',c.id); if(r.error){toast('Delete failed: '+r.error.message,true);return;} load(); toast('Removed'); }
+  async function reorder(i,j){ if(j<0||j>=list.length)return; var a=list.slice(),t=a[i];a[i]=a[j];a[j]=t; var r=await Promise.all(a.map(function(it,idx){return sb.from('video_channels').update({sort_order:idx}).eq('id',it.id);})); var e=r.find(function(x){return x&&x.error;}); if(e){toast('Reorder failed',true);return;} load(); }
+  function init(){ if(inited)return; inited=true; sb=window.LLAuth&&window.LLAuth.sb; host=el('chan-host'); msg=el('chan-msg'); if(!sb){toast('Not signed in',true);return;} load(); }
+  return { init:init };
+})();
+
 /* ===== console shell: sidebar navigation + settings ===== */
 (function(){
   function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
   try{ if(localStorage.getItem('ll-studio-density')==='compact') document.body.classList.add('compact'); }catch(e){}
 
-  var VIEWS={ learning:['lessons-wrap','Learning Center'], rockets:['rocket-wrap','Rocket Explorer'], settings:['settings-wrap','Settings'] };
+  var VIEWS={ learning:['lessons-wrap','Learning Center'], rockets:['rocket-wrap','Rocket Explorer'], channels:['channels-wrap','Videos'], settings:['settings-wrap','Settings'] };
   window.__studioView=function(v){
     Object.keys(VIEWS).forEach(function(k){ var el=document.getElementById(VIEWS[k][0]); if(el) el.hidden=(k!==v); });
     document.querySelectorAll('.side-item').forEach(function(x){ x.classList.toggle('on',x.dataset.view===v); });
     var tb=document.getElementById('tbTitle'); if(tb) tb.textContent=VIEWS[v][1];
     if(v==='rockets' && window.RocketStudio) RocketStudio.init();
+    if(v==='channels' && window.VideoChannels) VideoChannels.init();
     if(v==='settings') renderSettings();
     var c=document.querySelector('.console'); if(c) c.classList.remove('side-open');
   };
