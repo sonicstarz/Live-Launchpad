@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Launchpad — Launch Watch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chivo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070a10;--bg2:#0d121c;--panel:#111827;--panel2:#161f30;--line:#1e2738;--line2:#2a3650;--txt:#e9eef6;--txt2:#8b9bb4;--txt3:#586780;--amber:#ffb627;--green:#3ddc84;--teal:#2dd4bf;--blue:#4d9fff;--coral:#ff8a5b;--pink:#f472b6;--red:#ff5d5d;--mono:'Space Mono',monospace;--sans:'Chivo',sans-serif}
+:root[data-theme="light"]{--bg:#f4f6fb;--bg2:#fff;--panel:#fff;--panel2:#f0f3f9;--line:#dce3ef;--line2:#c4cfe0;--txt:#0f1726;--txt2:#48566e;--txt3:#7a89a3}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-weight:300;line-height:1.6;min-height:100vh;overflow-x:hidden}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+.star{position:absolute;background:var(--txt);border-radius:50%;animation:tw ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.12}50%{opacity:.85}}
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 20px}
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:18px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt);font-weight:700;font-size:16px;white-space:nowrap;font-family:var(--sans)}
+.brand .blink{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.nav-links{display:flex;gap:2px;flex:1;flex-wrap:wrap}
+.nav-links a{color:var(--txt2);text-decoration:none;font-size:13px;font-family:var(--mono);padding:7px 11px;border-radius:7px;transition:all .15s}
+.nav-links a:hover{color:var(--txt);background:var(--panel2)}
+.nav-links a.active{color:var(--amber);background:rgba(255,182,39,.1)}
+.theme-btn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0}
+.theme-btn:hover{color:var(--amber);border-color:var(--amber)}
+.nav-toggle{display:none;background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:18px;place-items:center}
+.nav-toggle:hover{color:var(--amber);border-color:var(--amber)}
+@media(max-width:860px){.nav-toggle{display:grid}.nav-inner{position:relative}.brand{margin-right:auto}.nav-links{display:none;position:absolute;top:calc(100% + 10px);left:0;right:0;flex:none;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 16px 40px rgba(0,0,0,.45);z-index:60}.nav-links.open{display:flex}.nav-links a{padding:11px 14px;border-radius:8px;font-size:14px}}
+/* mission header */
+.mission{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:30px 0 16px;position:relative;overflow:hidden}
+.mission::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--amber);opacity:.7}
+.mission.live::after{background:var(--green)}
+.m-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.flag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:4px 10px;border-radius:6px;background:rgba(255,182,39,.14);color:var(--amber)}
+.flag.live{background:rgba(61,220,132,.16);color:var(--green)}
+.flag.live::before{content:"● "}
+.m-name{font-size:clamp(19px,3.5vw,26px);font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.m-meta{font-family:var(--mono);font-size:12px;color:var(--txt3);margin-top:3px}
+.cd{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;align-items:flex-end}
+.cd-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);width:100%}
+.cd-unit{text-align:center;min-width:50px}
+.cd-num{font-family:var(--mono);font-size:clamp(24px,5vw,34px);font-weight:700;line-height:1;color:var(--amber);font-variant-numeric:tabular-nums}
+.cd.tplus .cd-num{color:var(--green)}
+.cd-u{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-top:5px}
+/* telemetry */
+.telem{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:14px 0 6px}
+.tcell{background:var(--bg2);padding:11px 12px;text-align:center}
+.tcell .tv{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+.tcell .tl{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);margin-top:3px}
+.telem-note{font-family:var(--mono);font-size:11px;color:var(--txt3);margin:2px 0 18px}
+.sim{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:#1a1205;background:var(--amber);border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:700}
+@media(max-width:640px){.telem{grid-template-columns:repeat(2,1fr)}}
+/* coverage feeds */
+.sec-head{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--txt);font-weight:700;display:flex;align-items:center;gap:10px;margin:24px 0 12px;flex-wrap:wrap}
+.sec-head .idx{color:var(--amber)}
+.layout-toggle{display:inline-flex;gap:4px;margin-left:auto;background:var(--bg2);border:1px solid var(--line2);border-radius:9px;padding:3px}
+.lt{background:none;border:none;color:var(--txt2);font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer}
+.lt:hover{color:var(--txt)}
+.lt.on{background:var(--amber);color:#1a1205;font-weight:700}
+.feeds{display:grid;gap:14px;margin-bottom:50px}
+.feeds.single{grid-template-columns:1fr}
+.feeds.twoup{grid-template-columns:repeat(2,1fr)}
+.feeds.grid{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+@media(max-width:720px){.feeds.twoup,.feeds.grid{grid-template-columns:1fr}}
+.feed{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.feed::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--amber);opacity:.6;z-index:2}
+.feed.audio::after{background:var(--green);opacity:1}
+.feed-vid{position:relative;aspect-ratio:16/9;background:#000}
+.feed-vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.feed-bar{display:flex;align-items:center;gap:8px;padding:10px 12px}
+.feed-name{font-weight:700;font-size:13px;display:flex;align-items:center;gap:7px;min-width:0}
+.feed-name .pri{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--amber);border:1px solid rgba(255,182,39,.4);border-radius:4px;padding:1px 5px}
+.feed-ctrls{display:flex;gap:6px;margin-left:auto;flex-shrink:0}
+.fbtn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);font-family:var(--mono);font-size:11px;border-radius:7px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.fbtn:hover{color:var(--txt)}
+.fbtn.on{background:var(--green);color:#04130a;border-color:var(--green);font-weight:700}
+.fbtn.support{text-decoration:none}
+.loading{text-align:center;padding:40px;color:var(--txt3);font-family:var(--mono);font-size:13px}
+.note{background:rgba(77,159,255,.06);border:1px solid rgba(77,159,255,.22);border-radius:10px;padding:13px 16px;font-size:12px;color:var(--txt2);margin-bottom:24px;line-height:1.5}
+.note b{color:var(--blue)}
+footer{border-top:1px solid var(--line);margin-top:30px;padding:28px 0 50px;font-size:12px;color:var(--txt3)}
+footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber)}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div id="site-header"></div>
+<div class="wrap">
+  <div class="mission" id="mission">
+    <div class="m-top"><span class="flag" id="m-flag">T-MINUS</span></div>
+    <div class="m-name" id="m-name">Loading next launch…</div>
+    <div class="m-meta" id="m-meta">—</div>
+    <div class="cd" id="cd">
+      <div class="cd-label" id="cd-label">T-minus</div>
+      <div class="cd-unit"><div class="cd-num" id="cd-d">--</div><div class="cd-u">days</div></div>
+      <div class="cd-unit"><div class="cd-num" id="cd-h">--</div><div class="cd-u">hrs</div></div>
+      <div class="cd-unit"><div class="cd-num" id="cd-m">--</div><div class="cd-u">min</div></div>
+      <div class="cd-unit"><div class="cd-num" id="cd-s">--</div><div class="cd-u">sec</div></div>
+    </div>
+    <div class="telem" id="telem">
+      <div class="tcell"><div class="tv" id="t-vel">—</div><div class="tl">Velocity km/h</div></div>
+      <div class="tcell"><div class="tv" id="t-alt">—</div><div class="tl">Altitude km</div></div>
+      <div class="tcell"><div class="tv" id="t-stage">—</div><div class="tl">Stage</div></div>
+      <div class="tcell"><div class="tv" id="t-eng">—</div><div class="tl">Engines</div></div>
+      <div class="tcell"><div class="tv" id="t-down">—</div><div class="tl">Downrange km</div></div>
+    </div>
+    <div class="telem-note">Telemetry <span class="sim">SIM</span> — simulated placeholder. Live values need the OCR pipeline (separate backend project).</div>
+  </div>
+
+  <div class="sec-head"><span class="idx">02</span> Coverage Feeds
+    <div class="layout-toggle" id="layout">
+      <button class="lt on" data-lo="single">Single</button>
+      <button class="lt" data-lo="twoup">2-Up</button>
+      <button class="lt" data-lo="grid">Grid</button>
+    </div>
+  </div>
+  <div class="note"><b>How audio works:</b> all feeds start muted (browsers block autoplay sound). Hit <b>Solo audio</b> on one feed to hear it — that mutes the others. Each feed links out so you can support the creator directly. Streams show “offline” unless that channel is live.</div>
+  <div class="feeds single" id="feeds"></div>
+</div>
+<div id="site-footer"></div>
+
+<script>
+(function(){
+  var FEEDS=[
+    {id:'spacex',  name:'SpaceX',           channel:'UCtI0Hodo5o5dUb67FeUjDeA', site:'https://www.spacex.com',        primary:true},
+    {id:'nasa',    name:'NASA',             channel:'UCLA_DiR1FfKNvjuUpBHmylQ', site:'https://www.nasa.gov'},
+    {id:'ea',      name:'Everyday Astronaut',channel:'UC6uKrU_WqJ1R2HMTY3LIx5Q', site:'https://everydayastronaut.com'},
+    {id:'nsf',     name:'NASASpaceflight',  channel:'UCSUu1lih2RifWkKtDOJdsBA', site:'https://www.nasaspaceflight.com'},
+    {id:'sfn',     name:'Spaceflight Now',  channel:'UCoLdERT4-TJ82PJOHSrsZLQ', site:'https://spaceflightnow.com'},
+    {id:'lab',     name:'LabPadre (Starbase cams)', channel:'UCFwMITSkc1Fms6PoJoh1OUQ', site:'https://labpadre.com'}
+  ];
+  var layout='single', soloId=null, launch=null;
+  var el=function(id){return document.getElementById(id);};
+  var pad=function(n){return String(n).padStart(2,'0');};
+  var esc=function(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});};
+
+  /* ---------- feeds ---------- */
+  function feedSrc(f){
+    var mute=(soloId===f.id)?0:1;
+    if(f.videoId) return 'https://www.youtube.com/embed/'+f.videoId+'?autoplay=1&mute='+mute+'&rel=0&playsinline=1';
+    return 'https://www.youtube.com/embed/live_stream?channel='+f.channel+'&autoplay=1&mute='+mute;
+  }
+  function visibleFeeds(){
+    if(layout==='single') return FEEDS.slice(0,1);
+    if(layout==='twoup')  return FEEDS.slice(0,2);
+    return FEEDS;
+  }
+  function renderFeeds(){
+    var host=el('feeds'); host.className='feeds '+layout;
+    host.innerHTML=visibleFeeds().map(function(f){
+      var audio=soloId===f.id;
+      return '<div class="feed'+(audio?' audio':'')+'" data-id="'+f.id+'">'
+        +'<div class="feed-vid"><iframe src="'+feedSrc(f)+'" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>'
+        +'<div class="feed-bar"><div class="feed-name">'+esc(f.name)+(f.primary?'<span class="pri">Primary</span>':'')+'</div>'
+        +'<div class="feed-ctrls">'
+        +'<button class="fbtn audio'+(audio?' on':'')+'" data-act="solo">'+(audio?'🔊 Audio on':'🔈 Solo audio')+'</button>'
+        +'<a class="fbtn support" href="'+esc(f.site)+'" target="_blank" rel="noopener">Support ↗</a>'
+        +'</div></div></div>';
+    }).join('');
+    host.querySelectorAll('[data-act=solo]').forEach(function(b){ b.onclick=function(){ var id=b.closest('.feed').dataset.id; soloId=(soloId===id)?null:id; renderFeeds(); }; });
+  }
+  function setLayout(lo){ layout=lo; el('layout').querySelectorAll('.lt').forEach(function(x){x.classList.toggle('on',x.dataset.lo===lo);}); renderFeeds(); }
+  el('layout').querySelectorAll('.lt').forEach(function(b){ b.onclick=function(){ setLayout(b.dataset.lo); }; });
+
+  /* ---------- mission header + countdown ---------- */
+  function ytId(url){ if(!url)return null; var m=url.match(/[?&]v=([\w-]{11})/)||url.match(/youtu\.be\/([\w-]{11})/)||url.match(/\/embed\/([\w-]{11})/); return m?m[1]:null; }
+  function applyLaunch(L){
+    launch=L;
+    var live=!!L.webcastLive;
+    el('mission').classList.toggle('live',live);
+    el('m-flag').textContent=live?'LIVE NOW':'T-MINUS'; el('m-flag').className='flag'+(live?' live':'');
+    el('m-name').textContent=L.name||'Upcoming launch';
+    el('m-meta').textContent=[L.provider,L.pad,L.location].filter(Boolean).join(' · ')||'—';
+    // if the official webcast is a YouTube link, point the SpaceX/primary feed at that exact stream
+    var vid=(L.vidURLs&&L.vidURLs.length)?ytId(L.vidURLs[0].url):null;
+    if(vid){ var p=FEEDS.find(function(f){return f.primary;}); if(p) p.videoId=vid; }
+    renderFeeds();
+  }
+  function tick(){
+    if(!launch||!launch.net)return;
+    var ms=new Date(launch.net)-new Date();
+    var cd=el('cd');
+    if(ms>0){ // T-minus
+      cd.classList.remove('tplus'); el('cd-label').textContent='T-minus';
+      var s=Math.floor(ms/1000);
+      el('cd-d').textContent=pad(Math.floor(s/86400)); el('cd-h').textContent=pad(Math.floor(s/3600)%24);
+      el('cd-m').textContent=pad(Math.floor(s/60)%60); el('cd-s').textContent=pad(s%60);
+      setTelem(null);
+    } else { // T-plus
+      cd.classList.add('tplus'); el('cd-label').textContent='T-plus';
+      var t=Math.floor(-ms/1000);
+      el('cd-d').textContent=pad(Math.floor(t/86400)); el('cd-h').textContent=pad(Math.floor(t/3600)%24);
+      el('cd-m').textContent=pad(Math.floor(t/60)%60); el('cd-s').textContent=pad(t%60);
+      setTelem(t);
+    }
+  }
+  function setTelem(tplus){
+    if(tplus==null||tplus>600){ ['t-vel','t-alt','t-stage','t-eng','t-down'].forEach(function(id){el(id).textContent='—';}); return; }
+    // simulated illustrative profile (NOT real telemetry)
+    var vel=Math.min(28000, Math.round(tplus*tplus*0.9));
+    var alt=Math.min(560, Math.round(tplus*1.3));
+    var stage=tplus<160?'1':'2';
+    var eng=tplus<160?'33':'1';
+    var down=Math.min(2500, Math.round(Math.max(0,tplus-20)*5));
+    el('t-vel').textContent=vel.toLocaleString(); el('t-alt').textContent=alt;
+    el('t-stage').textContent=stage; el('t-eng').textContent=eng; el('t-down').textContent=down;
+  }
+
+  async function load(){
+    var L=null;
+    try{ var r=await fetch('/.netlify/functions/launches?kind=upcoming&limit=1'); if(r.ok){ var d=await r.json(); L=(d.results||[])[0]; } }catch(e){}
+    if(!L){ L={name:'Next Launch (feed unavailable)',net:new Date(Date.now()+2*86400000).toISOString(),provider:'—',pad:'—',location:'',webcastLive:false,vidURLs:[]}; }
+    applyLaunch(L); tick(); setInterval(tick,1000);
+  }
+  load();
+})();
+</script>
+<script>
+(function(){
+  var root=document.documentElement;
+  function setTheme(t){root.setAttribute('data-theme',t);var b=document.querySelector('.theme-btn');if(b)b.textContent=t==='light'?'☀':'☾';}
+  window.__toggleTheme=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
+  window.__toggleNav=function(){var n=document.querySelector('.nav-links');if(n)n.classList.toggle('open');};
+  setTheme('dark');
+  var page=(location.pathname.split('/').pop()||'index.html');
+  var links=[['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['learn.html','Learn'],['explorer.html','Rockets'],['about.html','About']];
+  var nl=links.map(function(l){var a=(l[0]===page||(l[0]==='schedule.html'&&page==='watch.html'))?' class="active"':'';return '<a href="'+l[0]+'"'+a+'>'+l[1]+'</a>';}).join('');
+  var h=document.getElementById('site-header');
+  if(h)h.outerHTML='<nav class="nav"><div class="nav-inner"><a class="brand" href="index.html">🚀 <span class="blink"></span> LIVE LAUNCHPAD</a><div class="nav-links">'+nl+'</div><button class="nav-toggle" onclick="__toggleNav()" aria-label="Menu">☰</button><button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">☾</button></div></nav>';
+  var f=document.getElementById('site-footer');
+  if(f)f.outerHTML='<footer><div class="wrap"><b>LIVE LAUNCHPAD</b> — mission control for the orbital era. Feeds belong to their creators; please support them directly.<br>An independent project · <a href="schedule.html">Schedule</a> · <a href="about.html">About</a></div></footer>';
+  var c=document.getElementById('stars');if(c){var s='';for(var i=0;i<70;i++){var z=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);s+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+z+'px;height:'+z+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=s;}
+})();
+</script>
+</body>
+</html>
