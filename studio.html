@@ -312,7 +312,7 @@ var Studio = (function(){
     libs.forEach(function(L,i){ h+=rowHTML(L,i,libs.length,{sub:counts[i]+' course'+(counts[i]===1?'':'s'),open:true}); });
     host.innerHTML=h;
     document.getElementById('add').onclick=function(){ openEditor('lib',null); };
-    wireRows('lib',libs);
+    wireRows('lib',libs); enableDrag('lib');
   }
   async function renderCourse(){
     state.level='course'; state.course=null;
@@ -320,24 +320,26 @@ var Studio = (function(){
     var counts=await Promise.all(courses.map(function(c){return countChildren('videos','course_id',c.id);}));
     state.list=courses;
     var h='<div class="crumb"><a data-nav="lib">Libraries</a><span class="sep">/</span><span class="cur">'+esc(state.lib.title)+'</span></div>';
-    h+='<div class="addbar"><button class="btn" id="add">+ New course</button></div>';
+    h+='<div class="addbar"><button class="btn" id="add">+ New course</button> <button class="btn ghost" id="cat-mgr">🏷 Categories</button></div>';
     if(!courses.length) h+='<div class="empty">No courses in this library yet.</div>';
     courses.forEach(function(c,i){ h+=rowHTML(c,i,courses.length,{sub:(c.category?c.category+' · ':'')+counts[i]+' video'+(counts[i]===1?'':'s'),open:true}); });
     host.innerHTML=h;
     document.getElementById('add').onclick=function(){ openEditor('course',null); };
-    wireRows('course',courses);
+    var cm=document.getElementById('cat-mgr'); if(cm) cm.onclick=manageCategories;
+    wireRows('course',courses); enableDrag('course');
   }
   async function renderVideo(){
     state.level='video';
     var vids=await fetchList('videos','course_id',state.course.id);
     state.list=vids;
     var h='<div class="crumb"><a data-nav="lib">Libraries</a><span class="sep">/</span><a data-nav="course">'+esc(state.lib.title)+'</a><span class="sep">/</span><span class="cur">'+esc(state.course.title)+'</span></div>';
-    h+='<div class="addbar"><button class="btn" id="add">+ Add video</button></div>';
-    if(!vids.length) h+='<div class="empty">No videos in this course yet — paste a YouTube link to add one.</div>';
+    h+='<div class="addbar"><button class="btn" id="add">+ Add video</button> <button class="btn ghost" id="pl-import">⤓ Import playlist</button></div>';
+    if(!vids.length) h+='<div class="empty">No videos in this course yet — paste a YouTube link, or import a whole playlist.</div>';
     vids.forEach(function(v,i){ h+=rowHTML(v,i,vids.length,{thumb:ytThumb(v.youtube_id)}); });
     host.innerHTML=h;
     document.getElementById('add').onclick=function(){ openEditor('video',null); };
-    wireRows('video',vids);
+    var pi=document.getElementById('pl-import'); if(pi) pi.onclick=importPlaylist;
+    wireRows('video',vids); enableDrag('video');
   }
   function reRender(level){ if(level==='lib')renderLib(); else if(level==='course')renderCourse(); else renderVideo(); }
 
@@ -416,6 +418,86 @@ var Studio = (function(){
     var err=res.find(function(r){return r&&r.error;});
     if(err){ toast('Reorder failed: '+err.error.message,true); return; }
     reRender(level);
+  }
+
+  /* ----- drag-to-reorder (desktop; ▲▼ buttons remain for touch) ----- */
+  var _drag=null;
+  function enableDrag(level){
+    host.querySelectorAll('.row').forEach(function(r){
+      r.setAttribute('draggable','true');
+      r.addEventListener('dragstart',function(e){ _drag=r; r.style.opacity='.45'; try{e.dataTransfer.effectAllowed='move';}catch(_){} });
+      r.addEventListener('dragend',function(){ if(_drag)_drag.style.opacity=''; _drag=null; });
+      r.addEventListener('dragover',function(e){ e.preventDefault(); if(!_drag||_drag===r)return; var rect=r.getBoundingClientRect(); var after=(e.clientY-rect.top)>rect.height/2; host.insertBefore(_drag, after?r.nextSibling:r); });
+      r.addEventListener('drop',function(e){ e.preventDefault(); commitOrder(level); });
+    });
+  }
+  function commitOrder(level){
+    var items=[].slice.call(host.querySelectorAll('.row')).map(function(r){ return state.list[+r.dataset.i]; }).filter(Boolean);
+    Promise.all(items.map(function(it,idx){ return sb.from(TABLE[level]).update({sort_order:idx}).eq('id',it.id); }))
+      .then(function(){ reRender(level); toast('Reordered'); })
+      .catch(function(){ toast('Reorder failed',true); reRender(level); });
+  }
+
+  /* ----- bulk import a YouTube playlist into the current course ----- */
+  var _plItems=[];
+  function importPlaylist(){
+    document.getElementById('modal-box').innerHTML='<h3>Import a YouTube playlist</h3>'
+      +'<div class="field"><label>Playlist URL or id</label><div style="display:flex;gap:8px"><input id="pl-q" placeholder="youtube.com/playlist?list=… or PL…" style="flex:1"><button class="btn ghost" id="pl-fetch" type="button">Fetch</button></div><div id="pl-msg" style="font-family:var(--mono);font-size:11px;color:var(--txt3);margin-top:6px;min-height:14px"></div></div>'
+      +'<div id="pl-list" style="max-height:44vh;overflow-y:auto;margin-top:4px"></div>'
+      +'<div class="modal-acts"><button class="btn ghost" id="pl-cancel">Cancel</button><button class="btn" id="pl-add" disabled>Add selected</button></div>';
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('pl-cancel').onclick=closeModal;
+    document.getElementById('pl-fetch').onclick=fetchPlaylist;
+    document.getElementById('pl-add').onclick=addPlaylist;
+    document.getElementById('pl-q').focus();
+  }
+  async function fetchPlaylist(){
+    var q=document.getElementById('pl-q').value.trim(), m=document.getElementById('pl-msg'); if(!q)return;
+    m.style.color='var(--txt3)'; m.textContent='Fetching…';
+    try{
+      var r=await fetch('/.netlify/functions/playlist?id='+encodeURIComponent(q));
+      var d=await r.json(); if(!r.ok||!d.results||!d.results.length) throw new Error(d.error||'empty');
+      _plItems=d.results;
+      var have={}; (state.list||[]).forEach(function(v){ have[v.youtube_id]=1; });
+      document.getElementById('pl-list').innerHTML=d.results.map(function(v,i){ var dup=have[v.youtube_id];
+        return '<label class="row" style="cursor:pointer"><input type="checkbox" class="pl-cb" data-i="'+i+'"'+(dup?'':' checked')+' style="flex:none;width:16px;height:16px"><img class="thumb" src="https://img.youtube.com/vi/'+esc(v.youtube_id)+'/mqdefault.jpg" alt="" loading="lazy"><div class="info"><h4>'+esc(v.title)+'</h4><div class="count">'+(dup?'already in this course':esc(v.youtube_id))+'</div></div></label>'; }).join('');
+      document.getElementById('pl-add').disabled=false;
+      m.style.color='var(--accent)'; m.textContent='✓ '+d.results.length+' videos found · untick any you don’t want';
+    }catch(e){ m.style.color='#ff5d5d'; m.textContent='Couldn’t fetch that playlist — check the URL/id.'; }
+  }
+  async function addPlaylist(){
+    var have={}; (state.list||[]).forEach(function(v){ have[v.youtube_id]=1; });
+    var chosen=[];
+    document.querySelectorAll('#pl-list .pl-cb').forEach(function(cb){ if(cb.checked){ var v=_plItems[+cb.dataset.i]; if(v&&!have[v.youtube_id]) chosen.push(v); } });
+    if(!chosen.length){ toast('Nothing new selected',true); return; }
+    document.getElementById('pl-add').disabled=true;
+    var base=state.list.length;
+    var rows=chosen.map(function(v,idx){ return { title:v.title||v.youtube_id, youtube_id:v.youtube_id, course_id:state.course.id, sort_order:base+idx }; });
+    var r=await sb.from('videos').insert(rows);
+    if(r.error){ toast('Import failed: '+r.error.message,true); document.getElementById('pl-add').disabled=false; return; }
+    closeModal(); renderVideo(); toast('Added '+rows.length+' video'+(rows.length===1?'':'s'));
+  }
+
+  /* ----- category manager (bulk rename across courses) ----- */
+  async function manageCategories(){
+    document.getElementById('modal-box').innerHTML='<h3>Categories</h3><div id="cat-msg" style="font-family:var(--mono);font-size:11px;color:var(--txt3);min-height:14px;margin-bottom:8px"></div><div id="cat-list"><div class="empty">Loading…</div></div><div class="modal-acts"><button class="btn ghost" id="cat-close">Close</button></div>';
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('cat-close').onclick=closeModal;
+    var r=await sb.from('courses').select('category');
+    if(r.error){ document.getElementById('cat-list').innerHTML='<div class="empty">Load failed.</div>'; return; }
+    var counts={}; (r.data||[]).forEach(function(c){ var k=(c.category||'').trim(); if(k) counts[k]=(counts[k]||0)+1; });
+    var keys=Object.keys(counts).sort();
+    if(!keys.length){ document.getElementById('cat-list').innerHTML='<div class="empty">No categories yet — set one when you edit a course.</div>'; return; }
+    document.getElementById('cat-list').innerHTML=keys.map(function(k){ return '<div class="row"><div class="info"><h4>'+esc(k)+'</h4><div class="count">'+counts[k]+' course'+(counts[k]===1?'':'s')+'</div></div><div class="acts"><button class="iconbtn" data-cat="'+esc(k)+'" title="Rename everywhere">✎</button></div></div>'; }).join('');
+    document.getElementById('cat-list').querySelectorAll('[data-cat]').forEach(function(b){ b.onclick=function(){ renameCategory(b.dataset.cat); }; });
+  }
+  async function renameCategory(oldName){
+    var nn=prompt('Rename category “'+oldName+'” to (updates every course using it):', oldName);
+    if(nn==null) return; nn=nn.trim(); if(!nn||nn===oldName) return;
+    var r=await sb.from('courses').update({category:nn}).eq('category',oldName);
+    var m=document.getElementById('cat-msg');
+    if(r.error){ if(m){m.style.color='#ff5d5d';m.textContent='Rename failed: '+r.error.message;} return; }
+    manageCategories();
   }
 
   function init(client){ sb=client; host=document.getElementById('studio'); msg=document.getElementById('studio-msg'); renderLib(); }
