@@ -67,6 +67,13 @@
   var _saved=(function(){try{return JSON.parse(sessionStorage.getItem('llq')||'null');}catch(e){return null;}})();
   var ch, pid=(_saved&&_saved.pid)||(Math.random().toString(36).slice(2)+Date.now().toString(36)), name='', myChoice=-1, recvTs=0, curI=-1;
   var $=function(id){return document.getElementById(id);};
+  // tiny WebAudio feedback (unlocked on the join tap so iOS allows it)
+  var AC=null;
+  function unlockAudio(){ try{ if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume(); }catch(e){} }
+  function ptone(freq,dur,type,vol,delay){ try{ if(!AC)return; var t=AC.currentTime+(delay||0); var o=AC.createOscillator(),g=AC.createGain(); o.type=type||'sine'; o.frequency.value=freq; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||0.08,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+dur+0.03); }catch(e){} }
+  function sLock(){ ptone(740,0.09,'square',0.06); }
+  function sRight(){ ptone(659,0.12,'sine',0.08); ptone(988,0.18,'sine',0.08,0.1); }
+  function sWrong(){ ptone(220,0.22,'sawtooth',0.05); }
   function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
   function show(id){ ['join','wait','quiz','locked','result'].forEach(function(x){ $(x).classList.toggle('on',x===id); }); }
 
@@ -80,7 +87,7 @@
     var code=($('code').value||'').trim().toUpperCase(); name=($('name').value||'').trim();
     if(!/^[A-Z0-9]{4,8}$/.test(code)){ $('jmsg').textContent='Enter the game code from the screen.'; return; }
     if(!name){ $('jmsg').textContent='Enter a name.'; return; }
-    $('joinbtn').disabled=true; $('jmsg').textContent='Joining…';
+    $('joinbtn').disabled=true; $('jmsg').textContent='Joining…'; unlockAudio();
     ch=sb.channel('quiz:'+code,{config:{broadcast:{self:false},presence:{key:pid}}});
     ch.on('broadcast',{event:'state'},onState);
     ch.on('broadcast',{event:'question'},onQuestion);
@@ -103,7 +110,7 @@
     if(myChoice>=0)return; myChoice=i;
     ch.send({type:'broadcast',event:'answer',payload:{pid:pid,name:name,i:curI,choice:i,ms:Date.now()-recvTs}});
     $('lockedbig').innerHTML='Locked in <span style="color:var(--green)">'+SHAPES[i]+'</span>';
-    show('locked');
+    sLock(); show('locked');
   }
   function rankOf(lb){ for(var i=0;i<lb.length;i++){ if(lb[i].name===name) return {rank:i+1,score:lb[i].score}; } return null; }
   function onReveal(o){
@@ -112,6 +119,7 @@
     $('rtext').textContent= myChoice<0?'No answer':(correct?'Correct!':'Not quite');
     var r=rankOf(p.leaderboard||[]);
     $('rrank').textContent= r?('#'+r.rank+' · '+r.score+' pts'):'';
+    if(myChoice>=0){ correct?sRight():sWrong(); }
     show('result');
   }
   function onFinal(o){

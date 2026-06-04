@@ -65,7 +65,7 @@
 <body>
 <div id="ll-gate-content" hidden>
   <div class="host">
-    <div class="topbar"><span class="brand"><span class="blink"></span>🚀 LIVE LAUNCHPAD</span><span class="qt" id="qt">Quiz</span><button class="fsbtn" id="fsbtn">⛶ Fullscreen</button></div>
+    <div class="topbar"><span class="brand"><span class="blink"></span>🚀 LIVE LAUNCHPAD</span><span class="qt" id="qt">Quiz</span><button class="fsbtn" id="mutebtn" title="Sound on/off">🔊</button><button class="fsbtn" id="fsbtn">⛶ Fullscreen</button></div>
 
     <div class="screen on" id="s-lobby">
       <div class="joinbox">
@@ -112,6 +112,14 @@
 var Host=(function(){
   var sb, ch, code='', quiz=null, qs=[], qi=-1, phase='lobby';
   var scores={}, names={}, answers={}, timer=null, deadline=0, curQ=null, lastReveal=null;
+  var AC=null, muted=false, prevCount=0, lastSec=0;
+  function unlockAudio(){ try{ if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume(); }catch(e){} }
+  function tone(freq,dur,type,vol,delay){ if(muted)return; try{ unlockAudio(); if(!AC)return; var t=AC.currentTime+(delay||0); var o=AC.createOscillator(),g=AC.createGain(); o.type=type||'sine'; o.frequency.value=freq; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||0.07,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+dur+0.03); }catch(e){} }
+  function sJoin(){ tone(880,0.10,'sine',0.045); }
+  function sStart(){ tone(440,0.12,'triangle',0.06); tone(660,0.14,'triangle',0.06,0.1); }
+  function sTick(){ tone(700,0.07,'square',0.04); }
+  function sReveal(){ tone(523,0.12,'sine',0.06); tone(784,0.2,'sine',0.06,0.12); }
+  function sFinal(){ [523,659,784,1047].forEach(function(f,i){ tone(f,0.22,'triangle',0.06,i*0.13); }); }
   var SHAPES=['▲','◆','●','■'];
   function el(id){return document.getElementById(id);}
   function esc(s){return String(s==null?'':s).replace(/[<>&"]/g,function(c){return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]);});}
@@ -140,18 +148,19 @@ var Host=(function(){
     ch.subscribe(function(s){ if(s==='SUBSCRIBED'){ ch.track({role:'host'}); bcastState(); } });
     el('startbtn').onclick=begin; el('nextbtn').onclick=nextQ;
     el('fsbtn').onclick=function(){ var e=document.documentElement,f=e.requestFullscreen||e.webkitRequestFullscreen; if(document.fullscreenElement)document.exitFullscreen(); else if(f)f.call(e); };
+    el('mutebtn').onclick=function(){ muted=!muted; el('mutebtn').textContent=muted?'🔇':'🔊'; if(!muted)unlockAudio(); };
   }
   function msg(t){ el('msgtxt').textContent=t; show('s-msg'); }
   function players(){ var st=ch.presenceState(), out=[]; Object.keys(st).forEach(function(k){ var m=st[k][0]||{}; if(m.role==='player'){ out.push({key:k,name:m.name||'Player'}); names[k]=m.name||'Player'; } }); return out; }
-  function updatePlayers(){ var p=players(); el('players').innerHTML=p.map(function(x){return '<span class="pchip">'+esc(x.name)+'</span>';}).join(''); el('pcount').textContent=p.length?(p.length+' player'+(p.length===1?'':'s')+' in'):'Waiting for players…'; el('startbtn').disabled=!p.length; }
+  function updatePlayers(){ var p=players(); el('players').innerHTML=p.map(function(x){return '<span class="pchip">'+esc(x.name)+'</span>';}).join(''); el('pcount').textContent=p.length?(p.length+' player'+(p.length===1?'':'s')+' in'):'Waiting for players…'; el('startbtn').disabled=!p.length; if(p.length>prevCount && phase==='lobby') sJoin(); prevCount=p.length; }
   function bcastState(){ ch.send({type:'broadcast',event:'state',payload:{phase:phase,qi:qi,total:qs.length}}); }
   function resync(){ if(phase==='question'&&curQ){ ch.send({type:'broadcast',event:'question',payload:curQ}); } else if(phase==='reveal'&&lastReveal){ ch.send({type:'broadcast',event:'reveal',payload:lastReveal}); } else { bcastState(); } }
 
-  function begin(){ qi=-1; nextQ(); }
+  function begin(){ unlockAudio(); qi=-1; nextQ(); }
   function nextQ(){ qi++; if(qi>=qs.length){ finish(); return; } askQ(); }
   function askQ(){
-    var q=qs[qi]; phase='question'; answers[qi]={};
-    show('s-question');
+    var q=qs[qi]; phase='question'; answers[qi]={}; lastSec=0;
+    show('s-question'); sStart();
     el('qnum').textContent='Question '+(qi+1)+' / '+qs.length;
     el('qanswered').textContent='0 answered';
     el('qprompt').textContent=q.prompt;
@@ -160,7 +169,7 @@ var Host=(function(){
     ch.send({type:'broadcast',event:'question',payload:curQ});
     var ms=(q.time_limit_s||20)*1000; deadline=Date.now()+ms;
     clearInterval(timer);
-    timer=setInterval(function(){ var left=Math.max(0,deadline-Date.now()); el('tbar').style.width=(left/ms*100)+'%'; if(left<=0){ clearInterval(timer); reveal(); } },120);
+    timer=setInterval(function(){ var left=Math.max(0,deadline-Date.now()); el('tbar').style.width=(left/ms*100)+'%'; var sec=Math.ceil(left/1000); if(sec<=3&&sec>0&&sec!==lastSec){lastSec=sec;sTick();} if(left<=0){ clearInterval(timer); reveal(); } },120);
   }
   function onAnswer(o){ var p=o.payload||{}; if(phase!=='question'||p.i!==qi)return; if(answers[qi][p.pid])return; answers[qi][p.pid]={choice:p.choice,ms:p.ms}; if(p.name)names[p.pid]=p.name; var n=Object.keys(answers[qi]).length; el('qanswered').textContent=n+' answered'; if(n>=players().length && players().length>0){ clearInterval(timer); setTimeout(reveal,400); } }
   function leaderboard(){ return Object.keys(scores).map(function(k){return {name:names[k]||'Player',score:scores[k]};}).sort(function(a,b){return b.score-a.score;}); }
@@ -169,7 +178,7 @@ var Host=(function(){
     var q=qs[qi], ans=answers[qi], counts=[0,0,0,0], time=(q.time_limit_s||20)*1000;
     Object.keys(ans).forEach(function(pid){ var a=ans[pid]; if(a.choice>=0&&a.choice<4)counts[a.choice]++; if(a.choice===q.correct_index){ var pts=Math.round((q.points||1000)*(1-0.5*Math.min(a.ms,time)/time)); scores[pid]=(scores[pid]||0)+Math.max(0,pts); } });
     var lb=leaderboard();
-    show('s-reveal');
+    show('s-reveal'); sReveal();
     el('rprompt').textContent=q.prompt;
     var maxc=Math.max(1,counts[0],counts[1],counts[2],counts[3]);
     el('rchoices').innerHTML=q.choices.map(function(c,i){ return '<div class="choice c'+i+(i===q.correct_index?' right':' dim')+'"><span class="shape">'+SHAPES[i]+'</span><span>'+esc(c)+'</span><span class="cnt">'+counts[i]+'</span><div class="rbar" style="width:'+(counts[i]/maxc*100).toFixed(0)+'%"></div></div>'; }).join('');
@@ -181,7 +190,7 @@ var Host=(function(){
   }
   function finish(){
     phase='ended'; var lb=leaderboard();
-    show('s-podium');
+    show('s-podium'); sFinal();
     var top=lb.slice(0,3), order=[1,0,2]; // silver, gold, bronze visual order
     el('podium').innerHTML=order.map(function(idx){ var p=top[idx]; if(!p)return ''; var medal=idx===0?'🥇':idx===1?'🥈':'🥉'; return '<div class="pod p'+(idx+1)+'"><div class="medal">'+medal+'</div><div class="nm">'+esc(p.name)+'</div><div class="sc">'+p.score+'</div></div>'; }).join('');
     el('finallead').innerHTML=lb.map(function(p,i){ return '<div class="lrow"><span class="rk">'+(i+1)+'</span><span class="nm">'+esc(p.name)+'</span><span class="sc">'+p.score+'</span></div>'; }).join('');
