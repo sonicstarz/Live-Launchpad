@@ -587,7 +587,9 @@ function startFlappy(){
   reset();
   function addPipe(){const gap=GAP;const gy=50+Math.random()*(H-gap-100);pipes.push({x:W+40,gap:gap,gy:gy,scored:false});}
   function flap(){if(dead){cleanup();startFlappy();return;}started=true;vy=FLAP;}
-  const keyHandler=function(e){if(e.key===' '||e.code==='Space'){e.preventDefault();flap();}};
+  // Flappy Bird mechanic: one impulse per tap. Ignore key auto-repeat so holding
+  // Space doesn't machine-gun flaps (that would defeat the gravity).
+  const keyHandler=function(e){if((e.key===' '||e.code==='Space')&&!e.repeat){e.preventDefault();flap();}};
   document.addEventListener('keydown',keyHandler);
   cv.onpointerdown=function(e){e.preventDefault();flap();};
   function tick(){
@@ -604,7 +606,10 @@ function startFlappy(){
       const inX=SHIP_X+SHIP_W>p.x&&SHIP_X<p.x+50;
       if(inX&&(y<p.gy||y+SHIP_H>p.gy+p.gap))dead=true;
     });
-    if(y+SHIP_H>H||y<0)dead=true;
+    // Flappy Bird: the ceiling does NOT kill — the bird is just capped at the top.
+    // Death is only from hitting a pipe or the ground.
+    if(y<0){y=0;if(vy<0)vy=0;}
+    if(y+SHIP_H>H)dead=true;
     if(dead) LL_onGameOver('flappy',score);
   }
   function draw(){
@@ -995,15 +1000,29 @@ function startGravity(){
   const cv=$('gameCanvas'),ctx=setupCanvas(cv);
   const W=GAME_W,H=GAME_H;
   const G=1800, START={x:54,y:200};   // G (=GM) and launch speed below are the feel knobs
-  let planet,target,probe,flying,aiming,aim,lives,score,dead;
-  function placePlanet(){ planet={x:165+Math.random()*120,y:80+Math.random()*240,r:24+Math.random()*9}; }
-  function placeTarget(){ let x,y,n=0; do{ x=150+Math.random()*225; y=34+Math.random()*332; n++; } while(n<50 && (Math.hypot(x-planet.x,y-planet.y)<planet.r+46 || x<118)); target={x:x,y:y,r:15}; }
+  let planets,target,probe,flying,aiming,aim,lives,score,dead;
+  function buildStage(){
+    var lvl=score;
+    var n=1+(lvl>=3?1:0)+(lvl>=6?1:0);                 // up to 3 gravity wells
+    planets=[];
+    for(var i=0;i<n;i++){
+      var pl={ x:140+Math.random()*170, y:55+Math.random()*290, r:20+Math.random()*12, vx:0, vy:0 };
+      if(lvl>=4){ var sp=0.4+Math.min(1.3,(lvl-4)*0.18), a=Math.random()*6.283; pl.vx=Math.cos(a)*sp; pl.vy=Math.sin(a)*sp; }  // drift between shots
+      planets.push(pl);
+    }
+    var x,y,k=0;
+    do{ x=150+Math.random()*220; y=34+Math.random()*332; k++; }
+    while(k<80 && (x<120 || planets.some(function(p){return Math.hypot(x-p.x,y-p.y)<p.r+42;})));
+    target={x:x,y:y,r:Math.max(8,15-lvl*0.5)};         // target shrinks as you climb
+  }
   function resetProbe(){ probe={x:START.x,y:START.y,vx:0,vy:0}; flying=false; aiming=false; aim=null; }
-  function reset(){ lives=3; score=0; dead=false; placePlanet(); placeTarget(); resetProbe(); }
+  function reset(){ lives=3; score=0; dead=false; buildStage(); resetProbe(); }
   reset();
   const _g={ax:0,ay:0};
-  function accelAt(x,y){ const dx=planet.x-x,dy=planet.y-y; let d2=dx*dx+dy*dy; const min=planet.r*planet.r; if(d2<min)d2=min; const a=G/d2, inv=1/Math.sqrt(d2); _g.ax=dx*inv*a; _g.ay=dy*inv*a; }
-  function predict(){ if(!aim)return[]; let x=START.x,y=START.y,vx=aim.vx,vy=aim.vy,pts=[]; for(let i=0;i<130;i++){ accelAt(x,y); vx+=_g.ax;vy+=_g.ay;x+=vx;y+=vy; if(i%4===0)pts.push([x,y]); if(Math.hypot(planet.x-x,planet.y-y)<planet.r)break; if(x<-30||x>W+30||y<-30||y>H+30)break; } return pts; }
+  function accelAt(x,y){ var ax=0,ay=0; for(var i=0;i<planets.length;i++){ var p=planets[i],dx=p.x-x,dy=p.y-y,d2=dx*dx+dy*dy,min=p.r*p.r; if(d2<min)d2=min; var a=G/d2,inv=1/Math.sqrt(d2); ax+=dx*inv*a; ay+=dy*inv*a; } _g.ax=ax;_g.ay=ay; }
+  function hitsPlanet(x,y){ for(var i=0;i<planets.length;i++){ if(Math.hypot(planets[i].x-x,planets[i].y-y)<planets[i].r)return true; } return false; }
+  function predict(){ if(!aim)return[]; var x=START.x,y=START.y,vx=aim.vx,vy=aim.vy,pts=[]; for(var i=0;i<150;i++){ accelAt(x,y); vx+=_g.ax;vy+=_g.ay;x+=vx;y+=vy; if(i%4===0)pts.push([x,y]); if(hitsPlanet(x,y))break; if(x<-30||x>W+30||y<-30||y>H+30)break; } return pts; }
+  function movePlanets(){ for(var i=0;i<planets.length;i++){ var p=planets[i]; p.x+=p.vx; p.y+=p.vy; if(p.x<p.r+30){p.x=p.r+30;p.vx*=-1;} if(p.x>W-p.r-12){p.x=W-p.r-12;p.vx*=-1;} if(p.y<p.r+12){p.y=p.r+12;p.vy*=-1;} if(p.y>H-p.r-12){p.y=H-p.r-12;p.vy*=-1;} } }
   function loseLife(){ lives--; if(lives<=0){ dead=true; LL_onGameOver('gravity',score); } else resetProbe(); }
   function ptr(e){ const r=cv.getBoundingClientRect(); return { x:((e.touches?e.touches[0].clientX:e.clientX)-r.left)*(W/r.width), y:((e.touches?e.touches[0].clientY:e.clientY)-r.top)*(H/r.height) }; }
   function updateAim(p){ let dx=START.x-p.x,dy=START.y-p.y; const len=Math.hypot(dx,dy); const pw=Math.min(len,90)/90, sp=1.0+pw*5.0, inv=len>0?1/len:0; aim={vx:dx*inv*sp, vy:dy*inv*sp}; }
@@ -1013,10 +1032,11 @@ function startGravity(){
   const keyHandler=function(e){ if((e.key===' '||e.code==='Space')&&dead){ e.preventDefault(); cleanup(); startGravity(); } };
   document.addEventListener('keydown',keyHandler);
   function tick(){
-    if(dead||!flying)return;
+    if(dead)return;
+    if(!flying){ if(!aiming && score>=4) movePlanets(); return; }   // wells drift between shots, frozen while you aim/fly
     accelAt(probe.x,probe.y); probe.vx+=_g.ax; probe.vy+=_g.ay; probe.x+=probe.vx; probe.y+=probe.vy;
-    if(Math.hypot(planet.x-probe.x,planet.y-probe.y)<planet.r){ loseLife(); return; }
-    if(Math.hypot(target.x-probe.x,target.y-probe.y)<target.r){ score++; $('stageInfo').textContent='Drag to aim · release to slingshot · score: '+score+' · lives: '+lives; placeTarget(); resetProbe(); return; }
+    if(hitsPlanet(probe.x,probe.y)){ loseLife(); return; }
+    if(Math.hypot(target.x-probe.x,target.y-probe.y)<target.r){ score++; $('stageInfo').textContent='Drag to aim · release to slingshot · score: '+score+' · lives: '+lives; buildStage(); resetProbe(); return; }
     if(probe.x<-30||probe.x>W+30||probe.y<-30||probe.y>H+30){ loseLife(); }
   }
   function draw(){
@@ -1024,10 +1044,12 @@ function startGravity(){
     ctx.fillStyle='rgba(255,255,255,.22)';for(let i=0;i<44;i++)ctx.fillRect((i*71)%W,(i*53)%H,1.4,1.4);
     ctx.strokeStyle='#3ddc84';ctx.lineWidth=3;ctx.beginPath();ctx.arc(target.x,target.y,target.r,0,6.283);ctx.stroke();
     ctx.strokeStyle='rgba(61,220,132,.3)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(target.x,target.y,target.r+6,0,6.283);ctx.stroke();
-    var grd=ctx.createRadialGradient(planet.x-planet.r*0.3,planet.y-planet.r*0.3,2,planet.x,planet.y,planet.r);
-    grd.addColorStop(0,'#6da8ff');grd.addColorStop(1,'#1c3a66');
-    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(planet.x,planet.y,planet.r,0,6.283);ctx.fill();
-    ctx.strokeStyle='rgba(109,168,255,.22)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(planet.x,planet.y,planet.r+10,0,6.283);ctx.stroke();
+    for(var pi=0;pi<planets.length;pi++){ var pl=planets[pi];
+      var grd=ctx.createRadialGradient(pl.x-pl.r*0.3,pl.y-pl.r*0.3,2,pl.x,pl.y,pl.r);
+      grd.addColorStop(0,'#6da8ff');grd.addColorStop(1,'#1c3a66');
+      ctx.fillStyle=grd;ctx.beginPath();ctx.arc(pl.x,pl.y,pl.r,0,6.283);ctx.fill();
+      ctx.strokeStyle='rgba(109,168,255,.22)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(pl.x,pl.y,pl.r+10,0,6.283);ctx.stroke();
+    }
     if(aiming&&aim){ const pts=predict(); ctx.fillStyle='rgba(255,182,39,.7)'; for(let i=0;i<pts.length;i++)ctx.fillRect(pts[i][0]-1.5,pts[i][1]-1.5,3,3); }
     ctx.save();ctx.translate(probe.x,probe.y);
     if(flying){ctx.fillStyle='rgba(255,122,60,.7)';ctx.beginPath();ctx.arc(-probe.vx,-probe.vy,3,0,6.283);ctx.fill();}
@@ -1302,23 +1324,25 @@ function startDocking(){
   const W=GAME_W,H=GAME_H,CX=W/2,CY=H/2;
   function norm(a){ a%=360; if(a>180)a-=360; if(a<-180)a+=360; return a; }
   function P(deg,r){ var a=deg*Math.PI/180; return [CX+Math.sin(a)*r, CY-Math.cos(a)*r]; }  // deg = clockwise from top
-  let level,score,stationAng,omega,shipSpin,shipRoll,notchBase,dist,vApp,dead,flash,wobAmp,wobPh,dir;
+  let level,score,stationAng,omega,shipSpin,shipRoll,notchBase,dist,vApp,phase,wobAmp,wobPh,dir,fuel,timeLeft,timeMax,animT,debris,deadReason;
+  function makeDebris(){ debris=[]; for(var i=0;i<6;i++)debris.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,s:1+Math.random()*2.5}); }
   function levelup(first){
     if(first){ level=0; score=0; } else { level++; }
     dir=(level%2===0)?1:-1;
-    omega=dir*(0.7+level*0.32);                 // station spin, deg/tick (×60 = deg/s)
-    wobAmp=Math.min(0.35,level*0.05); wobPh=0;  // slow tumble grows with level
+    omega=dir*(0.7+level*0.32);                  // station spin, deg/tick (×60 = deg/s)
+    wobAmp=Math.min(0.4,level*0.06); wobPh=0;     // slow tumble grows with level
     stationAng=Math.random()*360; notchBase=Math.random()*360;
     shipSpin=0; shipRoll=0; dist=1; vApp=0;
+    fuel=100; timeMax=Math.max(9,16-level*0.8)*60; timeLeft=timeMax;   // ticks; window shrinks per level
   }
-  function reset(){ dead=false; flash=0; levelup(true); }
+  function reset(){ phase='fly'; animT=0; deadReason=''; makeDebris(); levelup(true); }
   reset();
   function spinTol(){ return Math.max(0.03,0.085-level*0.006); }   // deg/tick
   function alignTol(){ return Math.max(4,11-level*0.7); }          // deg
-  const GENTLE=0.010, DOCK_D=0.05, TORQUE=0.006, BURN=0.00065, MAXSPIN=4;
+  const GENTLE=0.010, DOCK_D=0.05, TORQUE=0.006, BURN=0.00065, MAXSPIN=4, FUEL_BURN=0.22, FUEL_ROLL=0.10;
 
   let left=false,right=false,burn=false;
-  function retry(){ if(dead){ cleanup(); startDocking(); return true; } return false; }
+  function retry(){ if(phase==='dead'){ cleanup(); startDocking(); return true; } return false; }
   const kd=function(e){
     if(e.key==='ArrowLeft'){e.preventDefault();left=true;}
     if(e.key==='ArrowRight'){e.preventDefault();right=true;}
@@ -1344,80 +1368,102 @@ function startDocking(){
   function omEff(){ return omega + wobAmp*Math.sin(wobPh); }
   function relSpin(){ return omEff()-shipSpin; }
   function notchScreen(){ return norm(notchBase + (stationAng-shipRoll)); }
+  function fail(reason){ phase='dead'; deadReason=reason; LL_onGameOver('docking',score); }
 
   function tick(){
-    if(dead) return;
-    if(flash>0)flash--;
-    if(left) shipSpin-=TORQUE;
-    if(right) shipSpin+=TORQUE;
+    if(phase==='dead') return;
+    for(var i=0;i<debris.length;i++){ var d=debris[i]; d.x+=d.vx; d.y+=d.vy; if(d.x<0)d.x+=W; if(d.x>W)d.x-=W; if(d.y<0)d.y+=H; if(d.y>H)d.y-=H; }
+    if(phase==='dock'){ animT++; if(animT>=55){ levelup(false); phase='fly'; } return; }   // clamps latch (station locked)
+    var canMove=fuel>0;
+    if(canMove){
+      if(left){ shipSpin-=TORQUE; fuel-=FUEL_ROLL; }
+      if(right){ shipSpin+=TORQUE; fuel-=FUEL_ROLL; }
+      if(burn){ vApp+=BURN; fuel-=FUEL_BURN; }
+    }
+    if(fuel<0)fuel=0;
     shipSpin=Math.max(-MAXSPIN,Math.min(MAXSPIN,shipSpin));
-    wobPh+=0.03;
-    stationAng+=omEff();
-    shipRoll+=shipSpin;
-    if(burn) vApp+=BURN;
+    wobPh+=0.03; stationAng+=omEff(); shipRoll+=shipSpin;
     dist-=vApp;
+    timeLeft--;
+    if(timeLeft<=0){ fail('TIME OUT'); return; }
     if(dist<=DOCK_D){
       dist=DOCK_D;
       var ok = Math.abs(relSpin())<=spinTol() && Math.abs(notchScreen())<=alignTol() && vApp<=GENTLE && vApp>0.0001;
-      if(ok){ score++; flash=45; levelup(false); }
-      else { dead=true; LL_onGameOver('docking',score); }
+      if(ok){ score++; phase='dock'; animT=0; shipSpin=omEff(); }   // lock spin → station appears latched
+      else { fail('COLLISION'); }
     }
   }
 
   function draw(){
     var screenRot=stationAng-shipRoll;
     var ringR=70+(1-dist)*250, collarR=ringR*0.36;
-    var aligned=Math.abs(relSpin())<=spinTol() && Math.abs(notchScreen())<=alignTol();
-    // space
+    var aligned=phase!=='fly' || (Math.abs(relSpin())<=spinTol() && Math.abs(notchScreen())<=alignTol());
+    // space + drifting debris
     ctx.fillStyle='#02040a';ctx.fillRect(0,0,W,H);
     for(var i=0;i<70;i++){ var p=P(i*53-shipRoll, 50+((i*61)%240)); ctx.fillStyle='rgba(255,255,255,'+(0.25+(i%5)*0.12)+')'; ctx.fillRect(p[0],p[1],1.6,1.6); }
+    for(var di=0;di<debris.length;di++){ var d=debris[di]; ctx.fillStyle='rgba(140,151,168,.5)'; ctx.fillRect(d.x,d.y,d.s,d.s); }
     // ---- station ----
-    // outer ring
     ctx.strokeStyle='#566476';ctx.lineWidth=Math.max(5,ringR*0.09);
     ctx.beginPath();ctx.arc(CX,CY,ringR,0,Math.PI*2);ctx.stroke();
-    // ring habitat modules (sell the spin)
-    for(var m=0;m<12;m++){ var md=m*30+screenRot, q=P(md,ringR); ctx.fillStyle=(m%3===0)?'#9aa6b6':'#3c475a'; ctx.fillRect(q[0]-ringR*0.05,q[1]-ringR*0.05,ringR*0.10,ringR*0.10); }
-    // spokes
+    for(var m=0;m<12;m++){ var md=m*30+screenRot, q=P(md,ringR); ctx.fillStyle=(m%3===0)?'#9aa6b6':'#3c475a'; ctx.fillRect(q[0]-ringR*0.05,q[1]-ringR*0.05,ringR*0.10,ringR*0.10);
+      // blinking nav lights
+      if((m+Math.floor(wobPh*3))%4===0){ ctx.fillStyle=m%2?'#ff5d5d':'#3ddc84'; ctx.fillRect(q[0]-1.5,q[1]-1.5,3,3); } }
     ctx.strokeStyle='#2a3547';ctx.lineWidth=Math.max(2,ringR*0.02);
     for(var s=0;s<4;s++){ var sd=s*90+screenRot, a=P(sd,collarR), b=P(sd,ringR); ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke(); }
-    // hub + docking collar
     ctx.fillStyle='#0c121b';ctx.beginPath();ctx.arc(CX,CY,collarR,0,Math.PI*2);ctx.fill();
     ctx.strokeStyle='#4d5a6b';ctx.lineWidth=Math.max(3,collarR*0.16);ctx.beginPath();ctx.arc(CX,CY,collarR,0,Math.PI*2);ctx.stroke();
-    // collar guide teeth
     for(var k=0;k<8;k++){ var kd2=k*45+screenRot, t=P(kd2,collarR); ctx.fillStyle='#33404f'; ctx.fillRect(t[0]-2,t[1]-2,4,4); }
-    // docking marker (notch) — green when matched/aligned, amber otherwise
     var nd=notchBase+screenRot, np=P(nd,collarR);
     ctx.fillStyle=aligned?'#3ddc84':'#ffb627'; ctx.shadowColor=ctx.fillStyle; ctx.shadowBlur=14;
     ctx.beginPath();ctx.arc(np[0],np[1],Math.max(5,collarR*0.16),0,Math.PI*2);ctx.fill(); ctx.shadowBlur=0;
-    // ---- ship crosshair (fixed, top of collar) ----
+    // ---- docking-clamp latch animation ----
+    if(phase==='dock'){
+      var prog=Math.min(1,animT/55);
+      for(var c=0;c<4;c++){ var ja=c*90, jr=collarR*(1.18-0.34*prog), jp=P(ja,jr);
+        ctx.save();ctx.translate(jp[0],jp[1]);ctx.rotate(ja*Math.PI/180);ctx.fillStyle='#aeb4bd';ctx.fillRect(-5,-4,10,8);ctx.restore(); }
+      ctx.strokeStyle='rgba(61,220,132,'+(0.9*(1-prog))+')';ctx.lineWidth=5;ctx.beginPath();ctx.arc(CX,CY,collarR+(1-prog)*60,0,Math.PI*2);ctx.stroke();
+      if(prog>=1){ ctx.fillStyle='#3ddc84';ctx.font='15px "Press Start 2P",monospace';ctx.textAlign='center';ctx.fillText('HARD DOCK!',CX,CY-4); }
+    }
+    // ---- ship crosshair + RCS puffs (fly only) ----
     var cp=P(0,collarR);
     ctx.strokeStyle=aligned?'#3ddc84':'#e9eef6';ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(cp[0]-10,cp[1]-12);ctx.lineTo(cp[0],cp[1]-2);ctx.lineTo(cp[0]+10,cp[1]-12);ctx.stroke();
     ctx.beginPath();ctx.moveTo(CX,CY-ringR-14);ctx.lineTo(CX,CY-ringR-2);ctx.stroke();
+    if(phase==='fly'&&fuel>0){
+      if(burn){ ctx.fillStyle='#ff7a3c';ctx.fillRect(CX-3,H-50,6,10+Math.random()*9); }
+      if(left){ ctx.fillStyle='#9fe1cb';ctx.fillRect(W-32,CY-2,8+Math.random()*5,4); }
+      if(right){ ctx.fillStyle='#9fe1cb';ctx.fillRect(24-Math.random()*5,CY-2,8+Math.random()*5,4); }
+    }
+    // ---- time strip (top) ----
+    ctx.fillStyle='#0c1320';ctx.fillRect(0,0,W,4);
+    ctx.fillStyle=timeLeft<240?'#ff5d5d':'#4d9fff';ctx.fillRect(0,0,W*Math.max(0,timeLeft/timeMax),4);
     // ---- HUD ----
     ctx.textAlign='left';ctx.font='9px "Press Start 2P",monospace';
     var rs=relSpin(), al=notchScreen();
-    ctx.fillStyle=Math.abs(rs)<=spinTol()?'#3ddc84':'#ffb627'; ctx.fillText('SPIN '+(rs*60>=0?'+':'')+(rs*60).toFixed(0)+'/s',12,20);
-    ctx.fillStyle=Math.abs(al)<=alignTol()?'#3ddc84':'#ffb627'; ctx.fillText('ALIGN '+al.toFixed(0)+String.fromCharCode(176),12,36);
-    ctx.fillStyle=(vApp<=GENTLE)?'#3ddc84':'#ff5d5d'; ctx.fillText('CLOSE '+(vApp*1000).toFixed(1),12,52);
-    ctx.textAlign='right';ctx.fillStyle='#ffb627';ctx.fillText('DOCKS '+score,W-12,20);ctx.fillStyle='#8a97a8';ctx.fillText('LVL '+(level+1),W-12,36);
+    ctx.fillStyle=Math.abs(rs)<=spinTol()?'#3ddc84':'#ffb627'; ctx.fillText('SPIN '+(rs*60>=0?'+':'')+(rs*60).toFixed(0)+'/s',12,24);
+    ctx.fillStyle=Math.abs(al)<=alignTol()?'#3ddc84':'#ffb627'; ctx.fillText('ALIGN '+al.toFixed(0)+String.fromCharCode(176),12,40);
+    ctx.fillStyle=(vApp<=GENTLE)?'#3ddc84':'#ff5d5d'; ctx.fillText('CLOSE '+(vApp*1000).toFixed(1),12,56);
+    ctx.fillStyle=fuel<25?'#ff5d5d':'#3ddc84'; ctx.fillText('FUEL '+Math.ceil(fuel),12,72);
+    ctx.textAlign='right';ctx.fillStyle='#ffb627';ctx.fillText('DOCKS '+score,W-12,24);ctx.fillStyle='#8a97a8';ctx.fillText('LVL '+(level+1),W-12,40);
     // guidance
-    ctx.textAlign='center';ctx.font='8px "Press Start 2P",monospace';
-    var msg,col='#7fd9c4';
-    if(vApp>GENTLE){ msg='TOO FAST — BRACE'; col='#ff5d5d'; }
-    else if(Math.abs(rs)>spinTol()){ msg='MATCH HER SPIN'; }
-    else if(Math.abs(al)>alignTol()){ msg='ALIGN THE COLLAR'; }
-    else if(dist>DOCK_D+0.02){ msg='HOLD IT — EASE IN'; col='#3ddc84'; }
-    else msg='';
-    if(flash>0){ ctx.fillStyle='#3ddc84';ctx.font='15px "Press Start 2P",monospace';ctx.fillText('HARD DOCK!',CX,H-40); }
-    else if(msg){ ctx.fillStyle=col;ctx.fillText(msg,CX,H-22); }
+    if(phase==='fly'){
+      ctx.textAlign='center';ctx.font='8px "Press Start 2P",monospace';
+      var msg,col='#7fd9c4';
+      if(fuel<=0){ msg='OUT OF FUEL'; col='#ff5d5d'; }
+      else if(vApp>GENTLE){ msg='TOO FAST — BRACE'; col='#ff5d5d'; }
+      else if(Math.abs(rs)>spinTol()){ msg='MATCH HER SPIN'; }
+      else if(Math.abs(al)>alignTol()){ msg='ALIGN THE COLLAR'; }
+      else if(dist>DOCK_D+0.02){ msg='HOLD IT — EASE IN'; col='#3ddc84'; }
+      else msg='';
+      if(msg){ ctx.fillStyle=col;ctx.fillText(msg,CX,H-22); }
+    }
     // range bar
     ctx.fillStyle='#0c1320';ctx.fillRect(40,H-14,W-80,6);
     ctx.fillStyle=aligned?'#3ddc84':'#4d9fff';ctx.fillRect(40,H-14,(W-80)*(1-dist)/(1-DOCK_D),6);
-    // ---- crash ----
-    if(dead){
+    // ---- fail ----
+    if(phase==='dead'){
       ctx.fillStyle='rgba(0,0,0,.78)';ctx.fillRect(0,0,W,H);
-      ctx.textAlign='center';ctx.fillStyle='#ff5d5d';ctx.font='17px "Press Start 2P",monospace';ctx.fillText('COLLISION',CX,CY-10);
+      ctx.textAlign='center';ctx.fillStyle='#ff5d5d';ctx.font='17px "Press Start 2P",monospace';ctx.fillText(deadReason||'COLLISION',CX,CY-10);
       ctx.fillStyle='#ffb627';ctx.font='10px "Press Start 2P",monospace';ctx.fillText('DOCKS '+score,CX,CY+18);
       ctx.fillStyle='#7fd9c4';ctx.font='8px "Press Start 2P",monospace';ctx.fillText('SPACE / tap to retry',CX,CY+42);
     }
