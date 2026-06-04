@@ -5,7 +5,7 @@
 
 create table if not exists public.scores (
   id         bigint generated always as identity primary key,
-  game       text        not null check (game in ('snake','flappy','lander','orbital','swarm','gravity','fuel','moonbase','docking')),
+  game       text        not null check (game in ('snake','flappy','lander','orbital','swarm','gravity','fuel','moonbase','docking','mines','cargo','breakout','asteroids','fusion')),
   name       text        not null check (name ~ '^[A-Z0-9]{1,3}$'),  -- 1–3 uppercase letters/numbers
   score      integer     not null check (score >= 0 and score <= 1000000),
   created_at timestamptz not null default now()
