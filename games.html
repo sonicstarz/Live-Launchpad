@@ -206,7 +206,7 @@ footer a:hover{color:var(--amber)}
   .game-stage .gs-title{font-family:'Press Start 2P',monospace;font-size:14px;color:#ffb627;margin-bottom:16px}
   /* Internal buffer stays 400x400 (crisp gameplay); CSS scales it up to fill the
      screen as a square. All coordinate math already maps via getBoundingClientRect. */
-  .game-stage canvas{background:#060d16;border-radius:10px;border:2px solid #2a3650;width:min(78vh,94vw);height:min(78vh,94vw);touch-action:none}
+  .game-stage canvas{background:#060d16;border-radius:10px;border:2px solid #2a3650;width:min(64vh,88vw);height:min(64vh,88vw);touch-action:none}
   .game-stage:fullscreen{background:#04060c}
   .game-stage:fullscreen canvas{width:min(88vh,96vw);height:min(88vh,96vw)}
   .game-stage:-webkit-full-screen canvas{width:min(88vh,96vw);height:min(88vh,96vw)}
@@ -453,11 +453,27 @@ function driveLoop(tick,draw){
     raf=requestAnimationFrame(frame);
     if(!last)last=ts;
     acc+=Math.min(ts-last,200); last=ts;            // cap catch-up to avoid a spiral after a stall
-    let n=0; while(acc>=SIM_STEP && n<5){ tick(); acc-=SIM_STEP; n++; }
+    // A 2ms tolerance: on a 60Hz display, frame deltas jitter just under/over
+    // 16.67ms. Without slack that produces a 0-tick / 2-tick stutter pattern;
+    // with it the sim reliably advances one step per frame = smooth motion.
+    let n=0; while(acc>=SIM_STEP-2 && n<5){ tick(); acc-=SIM_STEP; n++; }
     draw();
   }
   raf=requestAnimationFrame(frame);
   return function(){ cancelAnimationFrame(raf); };
+}
+
+/* Crisp rendering: the games' logical coordinate space is ALWAYS 400x400 (so
+   gameplay/difficulty never changes), but the canvas backing store is rendered
+   at ~2x device pixels and the context scaled to match. That keeps everything
+   sharp now that the canvas is displayed much larger than 400px. */
+const GAME_W=400,GAME_H=400;
+function setupCanvas(cv){
+  var s=Math.max(1.5, Math.min(2.5,(window.devicePixelRatio||1)*1.5));
+  cv.width=Math.round(GAME_W*s); cv.height=Math.round(GAME_H*s);
+  var ctx=cv.getContext('2d');
+  ctx.setTransform(cv.width/GAME_W,0,0,cv.height/GAME_H,0,0);
+  return ctx;
 }
 
 /* ============ ROCKET SNAKE ============ */
@@ -466,8 +482,8 @@ function openSnake(){
   startSnake();
 }
 function startSnake(){
-  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
-  const N=20,CELL=cv.width/N;
+  const cv=$('gameCanvas'),ctx=setupCanvas(cv);
+  const N=20,W=GAME_W,H=GAME_H,CELL=W/N;
   let snake=[{x:10,y:10}],dir={x:1,y:0},nextDir={x:1,y:0},food=spawn(),score=0,dead=false;
   function spawn(){return {x:Math.floor(Math.random()*N),y:Math.floor(Math.random()*N)};}
   function setDir(x,y){if(snake.length>1&&x===-dir.x&&y===-dir.y)return;nextDir={x:x,y:y};}
@@ -499,20 +515,20 @@ function startSnake(){
     else snake.pop();
     draw();
     if(dead){
-      ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,cv.width,cv.height);
+      ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,W,H);
       ctx.fillStyle='#ff5d5d';ctx.font='20px "Press Start 2P",monospace';ctx.textAlign='center';
-      ctx.fillText('GAME OVER',cv.width/2,cv.height/2-10);
+      ctx.fillText('GAME OVER',W/2,H/2-10);
       ctx.fillStyle='#ffb627';ctx.font='10px "Press Start 2P",monospace';
-      ctx.fillText('SCORE '+score,cv.width/2,cv.height/2+20);
-      ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.fillText('SPACE to retry',cv.width/2,cv.height/2+44);
+      ctx.fillText('SCORE '+score,W/2,H/2+20);
+      ctx.fillStyle='#7fd9c4';ctx.font='9px "Press Start 2P",monospace';ctx.fillText('SPACE to retry',W/2,H/2+44);
       clearInterval(timer);
       LL_onGameOver('snake',score);
     }
   }
   function draw(){
-    ctx.fillStyle='#060d16';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='#060d16';ctx.fillRect(0,0,W,H);
     ctx.strokeStyle='rgba(45,54,80,.3)';ctx.lineWidth=1;
-    for(let i=0;i<=N;i++){ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,cv.height);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*CELL);ctx.lineTo(cv.width,i*CELL);ctx.stroke();}
+    for(let i=0;i<=N;i++){ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*CELL);ctx.lineTo(W,i*CELL);ctx.stroke();}
     ctx.fillStyle='#3ddc84';ctx.shadowColor='#3ddc84';ctx.shadowBlur=12;
     ctx.fillRect(food.x*CELL+4,food.y*CELL+4,CELL-8,CELL-8);ctx.shadowBlur=0;
     for(let i=snake.length-1;i>=0;i--){
@@ -562,8 +578,8 @@ function starshipSprite(ctx,x,y,scale){
   }
 }
 function startFlappy(){
-  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
-  const W=cv.width,H=cv.height;
+  const cv=$('gameCanvas'),ctx=setupCanvas(cv);
+  const W=GAME_W,H=GAME_H;
   let y=H/2,vy=0,score=0,dead=false,started=false,t=0;
   const GRAV=0.45,FLAP=-7.2,SHIP_X=90,SHIP_W=12,SHIP_H=24,GAP=100;
   let pipes=[];
@@ -627,8 +643,8 @@ function openLander(){
   startLander();
 }
 function startLander(){
-  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
-  const W=cv.width,H=cv.height;
+  const cv=$('gameCanvas'),ctx=setupCanvas(cv);
+  const W=GAME_W,H=GAME_H;
   let bx,by,vx,vy,fuel,burning,thrustL,thrustR,dead,landed,padX,padW,t,scored;
   function reset(){bx=W/2;by=40;vx=(Math.random()-0.5)*2;vy=0;fuel=100;burning=false;thrustL=false;thrustR=false;dead=false;landed=false;padW=90;padX=40+Math.random()*(W-80-padW);t=0;scored=false;}
   reset();
@@ -728,8 +744,8 @@ function openOrbital(){
   startOrbital();
 }
 function startOrbital(){
-  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
-  const W=cv.width,H=cv.height;
+  const cv=$('gameCanvas'),ctx=setupCanvas(cv);
+  const W=GAME_W,H=GAME_H;
   const SHIP_R=11,ACC=0.7,FRICTION=0.86,MAXV=5.2;
   let px,py,vx,vy,score,dead,t,debris,spawnEvery,speed,stars;
   let keys={};
@@ -843,8 +859,8 @@ function openSwarm(){
   startSwarm();
 }
 function startSwarm(){
-  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
-  const W=cv.width,H=cv.height;
+  const cv=$('gameCanvas'),ctx=setupCanvas(cv);
+  const W=GAME_W,H=GAME_H;
   const PW=22,PH=16,PSPEED=4.2,BSPEED=7,EBSPEED=3.4,FIRE_CD=10;
   const COLORS=['#2dd4bf','#a78bfa','#ff8a5b','#4d9fff','#f472b6'];
   let px,py,lives,score,wave,dead,bullets,ebullets,enemies,stars,t,firing,moveDir,targetX,invuln,lastFire,clearAt;
@@ -976,8 +992,8 @@ function openGravity(){
   startGravity();
 }
 function startGravity(){
-  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
-  const W=cv.width,H=cv.height;
+  const cv=$('gameCanvas'),ctx=setupCanvas(cv);
+  const W=GAME_W,H=GAME_H;
   const G=1800, START={x:54,y:200};   // G (=GM) and launch speed below are the feel knobs
   let planet,target,probe,flying,aiming,aim,lives,score,dead;
   function placePlanet(){ planet={x:165+Math.random()*120,y:80+Math.random()*240,r:24+Math.random()*9}; }
@@ -1035,8 +1051,8 @@ function openFuel(){
   startFuel();
 }
 function startFuel(){
-  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
-  const W=cv.width,H=cv.height;
+  const cv=$('gameCanvas'),ctx=setupCanvas(cv);
+  const W=GAME_W,H=GAME_H;
   const ACC=0.22,FRICTION=0.985,MAXV=4.0,SAFE=0.9,DOCK_R=20,SHIP_R=9;
   let px,py,vx,vy,depot,lives,score,dead,docked,dockT,keys,drag,tx,ty;
   function placeDepot(){ depot={x:40+Math.random()*(W-80), y:34+Math.random()*90}; }
@@ -1103,8 +1119,8 @@ function openMoonBase(){
   startMoonBase();
 }
 function startMoonBase(){
-  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
-  const W=cv.width,H=cv.height;
+  const cv=$('gameCanvas'),ctx=setupCanvas(cv);
+  const W=GAME_W,H=GAME_H;
   // ----- layout regions -----
   const COLS=8,ROWS=7,TS=35,GX=(W-COLS*TS)/2,GY=52;               // grid
   const PALY=300,PALH=52,FOOTY=PALY+PALH;                          // palette + footer
@@ -1282,8 +1298,8 @@ function openDocking(){
   startDocking();
 }
 function startDocking(){
-  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
-  const W=cv.width,H=cv.height,CX=W/2,CY=H/2;
+  const cv=$('gameCanvas'),ctx=setupCanvas(cv);
+  const W=GAME_W,H=GAME_H,CX=W/2,CY=H/2;
   function norm(a){ a%=360; if(a>180)a-=360; if(a<-180)a+=360; return a; }
   function P(deg,r){ var a=deg*Math.PI/180; return [CX+Math.sin(a)*r, CY-Math.cos(a)*r]; }  // deg = clockwise from top
   let level,score,stationAng,omega,shipSpin,shipRoll,notchBase,dist,vApp,dead,flash,wobAmp,wobPh,dir;
