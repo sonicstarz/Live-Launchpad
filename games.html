@@ -356,6 +356,7 @@ const GAMES=[
   {art:'🪐',name:'GRAVITY ASSIST',desc:'Drag to aim, release to slingshot your probe around the planet\'s gravity and thread the gate.',status:'ready',play:'gravity'},
   {art:'⛽',name:'FUEL TRANSFER',desc:'Rendezvous and dock to the orbital depot — ease in slowly, don\'t slam the port.',status:'ready',play:'fuel'},
   {art:'🌖',name:'MOON BASE BUILDER',desc:'Build a lunar colony. Balance power, air & supply — and survive the two-week lunar night.',status:'ready',play:'moonbase'},
+  {art:'🌀',name:'SPIN DOCK',desc:'Match the spin of a tumbling station and ease into the collar. Don\'t come in hot.',status:'ready',play:'docking'},
   {art:'🧠',name:'LAUNCH TRIVIA',desc:'A daily quiz drawn from decades of space history. Build your streak.',status:'soon'},
   {art:'🛰',name:'ROCKETLE',desc:'Guess the rocket in six tries. A new mystery vehicle every day.',status:'soon'}
 ];
@@ -401,6 +402,7 @@ $('start').onclick=function(){
   else if(g.play==='gravity')openGravity();
   else if(g.play==='fuel')openFuel();
   else if(g.play==='moonbase')openMoonBase();
+  else if(g.play==='docking')openDocking();
 };
 document.addEventListener('keydown',function(e){
   if($('stage').classList.contains('open'))return;
@@ -1268,6 +1270,153 @@ function startMoonBase(){
   activeCleanup=cleanup;
   stopLoop=driveLoop(tick,draw);
 }
+
+/* ============ SPIN DOCK (Interstellar-style rotational docking) ============
+   A station tumbles in the centre. Roll your craft (◄ ►) to null the RELATIVE
+   spin and bring the station's docking collar marker under your crosshair, then
+   ease forward (▲ / SPACE) and make contact gently. Off-spin, off-axis, or too
+   fast on contact = a crunch. Each successful dock spins the next station faster.
+   Score = docks completed. */
+function openDocking(){
+  openStage('SPIN DOCK','◄ ► match the station’s spin · ▲ / SPACE ease in · dock gently');
+  startDocking();
+}
+function startDocking(){
+  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,CX=W/2,CY=H/2;
+  function norm(a){ a%=360; if(a>180)a-=360; if(a<-180)a+=360; return a; }
+  function P(deg,r){ var a=deg*Math.PI/180; return [CX+Math.sin(a)*r, CY-Math.cos(a)*r]; }  // deg = clockwise from top
+  let level,score,stationAng,omega,shipSpin,shipRoll,notchBase,dist,vApp,dead,flash,wobAmp,wobPh,dir;
+  function levelup(first){
+    if(first){ level=0; score=0; } else { level++; }
+    dir=(level%2===0)?1:-1;
+    omega=dir*(0.7+level*0.32);                 // station spin, deg/tick (×60 = deg/s)
+    wobAmp=Math.min(0.35,level*0.05); wobPh=0;  // slow tumble grows with level
+    stationAng=Math.random()*360; notchBase=Math.random()*360;
+    shipSpin=0; shipRoll=0; dist=1; vApp=0;
+  }
+  function reset(){ dead=false; flash=0; levelup(true); }
+  reset();
+  function spinTol(){ return Math.max(0.03,0.085-level*0.006); }   // deg/tick
+  function alignTol(){ return Math.max(4,11-level*0.7); }          // deg
+  const GENTLE=0.010, DOCK_D=0.05, TORQUE=0.006, BURN=0.00065, MAXSPIN=4;
+
+  let left=false,right=false,burn=false;
+  function retry(){ if(dead){ cleanup(); startDocking(); return true; } return false; }
+  const kd=function(e){
+    if(e.key==='ArrowLeft'){e.preventDefault();left=true;}
+    if(e.key==='ArrowRight'){e.preventDefault();right=true;}
+    if(e.key==='ArrowUp'||e.key===' '||e.code==='Space'){e.preventDefault(); if(retry())return; burn=true;}
+  };
+  const ku=function(e){
+    if(e.key==='ArrowLeft')left=false;
+    if(e.key==='ArrowRight')right=false;
+    if(e.key==='ArrowUp'||e.key===' '||e.code==='Space')burn=false;
+  };
+  document.addEventListener('keydown',kd);document.addEventListener('keyup',ku);
+  // on-screen pad (reuse the lander pad): ◄ ► roll, ▲ thrust
+  const pad=document.getElementById('landerPad');
+  function bindHold(el,d0,u0){ if(!el)return; const d=function(e){e.preventDefault();d0();},u=function(e){e.preventDefault();u0();}; el.addEventListener('pointerdown',d);el.addEventListener('pointerup',u);el.addEventListener('pointerleave',u);el.addEventListener('pointercancel',u); el._d=d;el._u=u; }
+  const bL=pad.querySelector('[data-act="left"]'),bR=pad.querySelector('[data-act="right"]'),bB=pad.querySelector('[data-act="burn"]');
+  bindHold(bL,function(){left=true;},function(){left=false;});
+  bindHold(bR,function(){right=true;},function(){right=false;});
+  bindHold(bB,function(){ if(retry())return; burn=true;},function(){burn=false;});
+  pad.style.display='flex';
+  cv.onpointerdown=function(e){e.preventDefault(); if(retry())return; burn=true;};
+  cv.onpointerup=function(){burn=false;};
+
+  function omEff(){ return omega + wobAmp*Math.sin(wobPh); }
+  function relSpin(){ return omEff()-shipSpin; }
+  function notchScreen(){ return norm(notchBase + (stationAng-shipRoll)); }
+
+  function tick(){
+    if(dead) return;
+    if(flash>0)flash--;
+    if(left) shipSpin-=TORQUE;
+    if(right) shipSpin+=TORQUE;
+    shipSpin=Math.max(-MAXSPIN,Math.min(MAXSPIN,shipSpin));
+    wobPh+=0.03;
+    stationAng+=omEff();
+    shipRoll+=shipSpin;
+    if(burn) vApp+=BURN;
+    dist-=vApp;
+    if(dist<=DOCK_D){
+      dist=DOCK_D;
+      var ok = Math.abs(relSpin())<=spinTol() && Math.abs(notchScreen())<=alignTol() && vApp<=GENTLE && vApp>0.0001;
+      if(ok){ score++; flash=45; levelup(false); }
+      else { dead=true; LL_onGameOver('docking',score); }
+    }
+  }
+
+  function draw(){
+    var screenRot=stationAng-shipRoll;
+    var ringR=70+(1-dist)*250, collarR=ringR*0.36;
+    var aligned=Math.abs(relSpin())<=spinTol() && Math.abs(notchScreen())<=alignTol();
+    // space
+    ctx.fillStyle='#02040a';ctx.fillRect(0,0,W,H);
+    for(var i=0;i<70;i++){ var p=P(i*53-shipRoll, 50+((i*61)%240)); ctx.fillStyle='rgba(255,255,255,'+(0.25+(i%5)*0.12)+')'; ctx.fillRect(p[0],p[1],1.6,1.6); }
+    // ---- station ----
+    // outer ring
+    ctx.strokeStyle='#566476';ctx.lineWidth=Math.max(5,ringR*0.09);
+    ctx.beginPath();ctx.arc(CX,CY,ringR,0,Math.PI*2);ctx.stroke();
+    // ring habitat modules (sell the spin)
+    for(var m=0;m<12;m++){ var md=m*30+screenRot, q=P(md,ringR); ctx.fillStyle=(m%3===0)?'#9aa6b6':'#3c475a'; ctx.fillRect(q[0]-ringR*0.05,q[1]-ringR*0.05,ringR*0.10,ringR*0.10); }
+    // spokes
+    ctx.strokeStyle='#2a3547';ctx.lineWidth=Math.max(2,ringR*0.02);
+    for(var s=0;s<4;s++){ var sd=s*90+screenRot, a=P(sd,collarR), b=P(sd,ringR); ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke(); }
+    // hub + docking collar
+    ctx.fillStyle='#0c121b';ctx.beginPath();ctx.arc(CX,CY,collarR,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#4d5a6b';ctx.lineWidth=Math.max(3,collarR*0.16);ctx.beginPath();ctx.arc(CX,CY,collarR,0,Math.PI*2);ctx.stroke();
+    // collar guide teeth
+    for(var k=0;k<8;k++){ var kd2=k*45+screenRot, t=P(kd2,collarR); ctx.fillStyle='#33404f'; ctx.fillRect(t[0]-2,t[1]-2,4,4); }
+    // docking marker (notch) — green when matched/aligned, amber otherwise
+    var nd=notchBase+screenRot, np=P(nd,collarR);
+    ctx.fillStyle=aligned?'#3ddc84':'#ffb627'; ctx.shadowColor=ctx.fillStyle; ctx.shadowBlur=14;
+    ctx.beginPath();ctx.arc(np[0],np[1],Math.max(5,collarR*0.16),0,Math.PI*2);ctx.fill(); ctx.shadowBlur=0;
+    // ---- ship crosshair (fixed, top of collar) ----
+    var cp=P(0,collarR);
+    ctx.strokeStyle=aligned?'#3ddc84':'#e9eef6';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(cp[0]-10,cp[1]-12);ctx.lineTo(cp[0],cp[1]-2);ctx.lineTo(cp[0]+10,cp[1]-12);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(CX,CY-ringR-14);ctx.lineTo(CX,CY-ringR-2);ctx.stroke();
+    // ---- HUD ----
+    ctx.textAlign='left';ctx.font='9px "Press Start 2P",monospace';
+    var rs=relSpin(), al=notchScreen();
+    ctx.fillStyle=Math.abs(rs)<=spinTol()?'#3ddc84':'#ffb627'; ctx.fillText('SPIN '+(rs*60>=0?'+':'')+(rs*60).toFixed(0)+'/s',12,20);
+    ctx.fillStyle=Math.abs(al)<=alignTol()?'#3ddc84':'#ffb627'; ctx.fillText('ALIGN '+al.toFixed(0)+String.fromCharCode(176),12,36);
+    ctx.fillStyle=(vApp<=GENTLE)?'#3ddc84':'#ff5d5d'; ctx.fillText('CLOSE '+(vApp*1000).toFixed(1),12,52);
+    ctx.textAlign='right';ctx.fillStyle='#ffb627';ctx.fillText('DOCKS '+score,W-12,20);ctx.fillStyle='#8a97a8';ctx.fillText('LVL '+(level+1),W-12,36);
+    // guidance
+    ctx.textAlign='center';ctx.font='8px "Press Start 2P",monospace';
+    var msg,col='#7fd9c4';
+    if(vApp>GENTLE){ msg='TOO FAST — BRACE'; col='#ff5d5d'; }
+    else if(Math.abs(rs)>spinTol()){ msg='MATCH HER SPIN'; }
+    else if(Math.abs(al)>alignTol()){ msg='ALIGN THE COLLAR'; }
+    else if(dist>DOCK_D+0.02){ msg='HOLD IT — EASE IN'; col='#3ddc84'; }
+    else msg='';
+    if(flash>0){ ctx.fillStyle='#3ddc84';ctx.font='15px "Press Start 2P",monospace';ctx.fillText('HARD DOCK!',CX,H-40); }
+    else if(msg){ ctx.fillStyle=col;ctx.fillText(msg,CX,H-22); }
+    // range bar
+    ctx.fillStyle='#0c1320';ctx.fillRect(40,H-14,W-80,6);
+    ctx.fillStyle=aligned?'#3ddc84':'#4d9fff';ctx.fillRect(40,H-14,(W-80)*(1-dist)/(1-DOCK_D),6);
+    // ---- crash ----
+    if(dead){
+      ctx.fillStyle='rgba(0,0,0,.78)';ctx.fillRect(0,0,W,H);
+      ctx.textAlign='center';ctx.fillStyle='#ff5d5d';ctx.font='17px "Press Start 2P",monospace';ctx.fillText('COLLISION',CX,CY-10);
+      ctx.fillStyle='#ffb627';ctx.font='10px "Press Start 2P",monospace';ctx.fillText('DOCKS '+score,CX,CY+18);
+      ctx.fillStyle='#7fd9c4';ctx.font='8px "Press Start 2P",monospace';ctx.fillText('SPACE / tap to retry',CX,CY+42);
+    }
+  }
+  let stopLoop;
+  function cleanup(){
+    if(stopLoop)stopLoop();
+    document.removeEventListener('keydown',kd);document.removeEventListener('keyup',ku);
+    cv.onpointerdown=null;cv.onpointerup=null;
+    [bL,bR,bB].forEach(function(b){if(b&&b._d){b.removeEventListener('pointerdown',b._d);b.removeEventListener('pointerup',b._u);b.removeEventListener('pointerleave',b._u);b.removeEventListener('pointercancel',b._u);}});
+    pad.style.display='none';
+  }
+  activeCleanup=cleanup;
+  stopLoop=driveLoop(tick,draw);
+}
 </script>
 <script>
 /* ===== ARCADE LEADERBOARD (Supabase backend) =====
@@ -1293,7 +1442,8 @@ function startMoonBase(){
     {id:'swarm',   name:'STAR SWARM',      emoji:'👾', unit:''},
     {id:'gravity', name:'GRAVITY ASSIST',  emoji:'🪐', unit:''},
     {id:'fuel',    name:'FUEL TRANSFER',   emoji:'⛽', unit:''},
-    {id:'moonbase',name:'MOON BASE',       emoji:'🌖', unit:'crew'}
+    {id:'moonbase',name:'MOON BASE',       emoji:'🌖', unit:'crew'},
+    {id:'docking', name:'SPIN DOCK',       emoji:'🌀', unit:'docks'}
   ];
   var META={};BOARDS.forEach(function(b){META[b.id]=b;});
   function el(id){return document.getElementById(id);}
