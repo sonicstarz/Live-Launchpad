@@ -202,8 +202,14 @@ footer a:hover{color:var(--amber)}
   .game-stage{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.92);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
   .game-stage.open{display:flex}
   .game-stage .close{position:absolute;top:20px;right:24px;background:var(--panel2);border:1px solid var(--line2);color:var(--txt);width:42px;height:42px;border-radius:10px;cursor:pointer;font-size:18px}
+  .game-stage .fs{position:absolute;top:20px;right:74px;background:var(--panel2);border:1px solid var(--line2);color:var(--txt);width:42px;height:42px;border-radius:10px;cursor:pointer;font-size:17px}
   .game-stage .gs-title{font-family:'Press Start 2P',monospace;font-size:14px;color:#ffb627;margin-bottom:16px}
-  .game-stage canvas{background:#060d16;border-radius:10px;border:2px solid #2a3650;max-width:92vw;touch-action:none}
+  /* Internal buffer stays 400x400 (crisp gameplay); CSS scales it up to fill the
+     screen as a square. All coordinate math already maps via getBoundingClientRect. */
+  .game-stage canvas{background:#060d16;border-radius:10px;border:2px solid #2a3650;width:min(78vh,94vw);height:min(78vh,94vw);touch-action:none}
+  .game-stage:fullscreen{background:#04060c}
+  .game-stage:fullscreen canvas{width:min(88vh,96vw);height:min(88vh,96vw)}
+  .game-stage:-webkit-full-screen canvas{width:min(88vh,96vw);height:min(88vh,96vw)}
   .game-stage .gs-info{font-family:var(--mono);font-size:12px;color:var(--txt2);margin-top:14px;text-align:center}
   @media(max-width:600px){
     .cab-body{padding:18px 16px 16px}
@@ -217,6 +223,7 @@ footer a:hover{color:var(--amber)}
     .game-art{font-size:48px}
     .game-stage .gs-title{font-size:11px}
     .game-stage .close{top:12px;right:12px;width:38px;height:38px}
+    .game-stage .fs{top:12px;right:58px;width:38px;height:38px;font-size:15px}
     .nav-inner{gap:10px}
   }
   .lander-pad{display:flex;gap:12px;margin-top:16px;align-items:stretch;justify-content:center;width:100%;max-width:400px;touch-action:none}
@@ -310,6 +317,7 @@ footer a:hover{color:var(--amber)}
 
 <div class="game-stage" id="stage">
   <button class="close" id="closeGame" aria-label="Close game">✕</button>
+  <button class="fs" id="fsGame" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
   <div class="gs-title" id="stageTitle">ROCKET SNAKE</div>
   <canvas id="gameCanvas" width="400" height="400"></canvas>
   <div class="lander-pad" id="landerPad" style="display:none">
@@ -410,12 +418,26 @@ function openStage(title,info){
   $('stage').classList.add('open');
 }
 function closeStage(){
+  if(document.fullscreenElement)document.exitFullscreen().catch(function(){});
   $('stage').classList.remove('open');
   if(activeCleanup){activeCleanup();activeCleanup=null;}
 }
 $('closeGame').onclick=closeStage;
+// Fullscreen toggle for the game stage (real browser fullscreen — hides chrome).
+function toggleStageFS(){
+  var st=$('stage'), req=st.requestFullscreen||st.webkitRequestFullscreen;
+  if(document.fullscreenElement||document.webkitFullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen).call(document); }
+  else if(req){ req.call(st); }
+}
+$('fsGame').onclick=toggleStageFS;
+function syncFSIcon(){ var on=!!(document.fullscreenElement||document.webkitFullscreenElement); $('fsGame').title=on?'Exit fullscreen':'Fullscreen'; }
+document.addEventListener('fullscreenchange',syncFSIcon);
+document.addEventListener('webkitfullscreenchange',syncFSIcon);
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'&&$('stage').classList.contains('open'))closeStage();
+  if($('stage').classList.contains('open')){
+    if(e.key==='Escape'&&!document.fullscreenElement)closeStage();   // in fullscreen, Esc exits FS first (browser default)
+    if((e.key==='f'||e.key==='F')&&!/^(input|textarea)$/i.test((e.target.tagName||'')))toggleStageFS();
+  }
 });
 
 /* Fixed-timestep driver: the simulation always advances at 60Hz no matter the
