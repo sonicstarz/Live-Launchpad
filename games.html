@@ -347,6 +347,7 @@ const GAMES=[
   {art:'👾',name:'STAR SWARM',desc:'Defend the launch site. Blast the alien swarm before they dive on you.',status:'ready',play:'swarm'},
   {art:'🪐',name:'GRAVITY ASSIST',desc:'Drag to aim, release to slingshot your probe around the planet\'s gravity and thread the gate.',status:'ready',play:'gravity'},
   {art:'⛽',name:'FUEL TRANSFER',desc:'Rendezvous and dock to the orbital depot — ease in slowly, don\'t slam the port.',status:'ready',play:'fuel'},
+  {art:'🌖',name:'MOON BASE BUILDER',desc:'Build a lunar colony. Balance power, air & supply — and survive the two-week lunar night.',status:'ready',play:'moonbase'},
   {art:'🧠',name:'LAUNCH TRIVIA',desc:'A daily quiz drawn from decades of space history. Build your streak.',status:'soon'},
   {art:'🛰',name:'ROCKETLE',desc:'Guess the rocket in six tries. A new mystery vehicle every day.',status:'soon'}
 ];
@@ -391,6 +392,7 @@ $('start').onclick=function(){
   else if(g.play==='swarm')openSwarm();
   else if(g.play==='gravity')openGravity();
   else if(g.play==='fuel')openFuel();
+  else if(g.play==='moonbase')openMoonBase();
 };
 document.addEventListener('keydown',function(e){
   if($('stage').classList.contains('open'))return;
@@ -1066,6 +1068,184 @@ function startFuel(){
   activeCleanup=cleanup;
   stopLoop=driveLoop(tick,draw);
 }
+
+/* ============ MOON BASE BUILDER ============
+   A lunar colony tile-builder. Place modules on the regolith grid and keep the
+   power / air / supply triangle balanced. The 14-day lunar NIGHT is the boss:
+   solar arrays go dark, so you live off batteries or a reactor. Survive as many
+   sols as you can; final score = sols survived. */
+function openMoonBase(){
+  openStage('MOON BASE BUILDER','Tap a module, then tap a tile to build · survive the lunar night');
+  startMoonBase();
+}
+function startMoonBase(){
+  const cv=$('gameCanvas'),ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  // ----- layout regions -----
+  const COLS=8,ROWS=7,TS=35,GX=(W-COLS*TS)/2,GY=52;               // grid
+  const PALY=300,PALH=52,FOOTY=PALY+PALH;                          // palette + footer
+  // ----- module catalogue -----
+  const MODS=[
+    {key:'hab', icon:'🛖', name:'HABITAT',  mass:40, desc:'+2 crew capacity. Crew do science → supply.'},
+    {key:'sol', icon:'🔆', name:'SOLAR',    mass:25, desc:'+6 power — daytime only.'},
+    {key:'bat', icon:'🔋', name:'BATTERY',  mass:30, desc:'+25 power storage for the night.'},
+    {key:'o2',  icon:'🫧', name:'O2 GEN',   mass:35, desc:'+5 air/sol. Needs power + water.'},
+    {key:'ice', icon:'🧊', name:'ICE MINE', mass:35, desc:'+4 water/sol. Build on crater ice only.'},
+    {key:'rx',  icon:'☢️', name:'REACTOR',  mass:95, desc:'+10 power, day & night.'}
+  ];
+  const MOD={};MODS.forEach(function(m){MOD[m.key]=m;});
+  // ----- day / night cycle (compressed but labelled as the 14-day night) -----
+  const DAY=6,NIGHT=8,CYCLE=DAY+NIGHT;
+  function isDay(sol){ return (sol%CYCLE)<DAY; }
+  function nightIn(sol){ var p=sol%CYCLE; return p<DAY?(DAY-p):0; }   // sols until night
+  // ----- state -----
+  let grid,ice,mass,o2,water,battery,crew,sol,dead,msg,msgT,selected,acc,bestCrew,flashT,blackout;
+  function tally(){ var c={hab:0,sol:0,bat:0,o2:0,ice:0,rx:0}; for(var i=0;i<grid.length;i++)if(grid[i])c[grid[i]]++; return c; }
+  function batCap(){ return 15+tally().bat*25; }
+  function setMsg(t,bad){ msg=t; msgT=160; flashT=bad?20:0; }
+  function reset(){
+    grid=new Array(COLS*ROWS).fill(null);
+    ice=new Array(COLS*ROWS).fill(false);
+    // a small ice crater: a plus-shape near a random spot in the lower-left quadrant
+    var cc=1+Math.floor(Math.random()*3), cr=ROWS-2-Math.floor(Math.random()*2);
+    [[0,0],[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){ var x=cc+d[0],y=cr+d[1]; if(x>=0&&x<COLS&&y>=0&&y<ROWS)ice[y*COLS+x]=true; });
+    // starter base so the player isn't dead on arrival
+    function put(col,row,k){ grid[row*COLS+col]=k; }
+    put(4,2,'hab'); put(5,2,'sol'); put(4,3,'o2'); put(5,3,'bat');
+    var ie=ice.indexOf(true); if(ie>=0)grid[ie]='ice';
+    mass=110; o2=26; water=8; battery=18; crew=2; sol=1; dead=false; bestCrew=2;
+    msg=''; msgT=0; selected=null; acc=0; flashT=0; blackout=false;
+  }
+  reset();
+
+  // ----- advance one sol: resolve the whole economy -----
+  function resolveSol(){
+    var c=tally(), day=isDay(sol);
+    var powerGen=c.sol*6*(day?1:0)+c.rx*10;
+    var powerDemand=crew*1+c.o2*3+c.ice*1;
+    var avail=powerGen+battery;
+    blackout=false;
+    if(avail>=powerDemand){ battery=Math.min(batCap(),avail-powerDemand); }
+    else { blackout=true; battery=0; }
+    // water in, then O2 generators run (if powered + watered)
+    water+=c.ice*4;
+    var o2run=blackout?0:Math.min(c.o2,water);   // each running gen needs 1 water
+    water=Math.max(0,water-o2run);
+    o2+=o2run*4;
+    o2-=crew;                                     // crew breathe
+    if(blackout)o2-=3;                            // life-support strain in the dark
+    o2=Math.min(o2,99);
+    // crew dynamics
+    var cap=c.hab*2;
+    if(o2<=0){ o2=0; crew=Math.max(0,crew-1); setMsg('SUFFOCATION — lost a crew member!',true); }
+    else if(crew<cap && o2>=crew+5 && !blackout){ crew++; }
+    else if(blackout){ setMsg('BROWNOUT — no power this sol',true); }
+    bestCrew=Math.max(bestCrew,crew);
+    mass+=crew*3;                                 // science → resupply funding
+    sol++;
+    if(crew<=0){ dead=true; LL_onGameOver('moonbase',bestCrew); }
+    else if(nightIn(sol)===1 && isDay(sol)) setMsg('Lunar NIGHT next sol — store power!',false);
+  }
+
+  // ----- geometry helpers (shared by draw + hit-test) -----
+  function tileAt(px,py){ if(px<GX||py<GY)return -1; var col=Math.floor((px-GX)/TS),row=Math.floor((py-GY)/TS); if(col<0||col>=COLS||row<0||row>=ROWS)return -1; if(py>=GY+ROWS*TS)return -1; return row*COLS+col; }
+  function palAt(px,py){ if(py<PALY||py>=PALY+PALH)return -1; var w=W/MODS.length; var i=Math.floor(px/w); return (i>=0&&i<MODS.length)?i:-1; }
+
+  function place(idx){
+    var m=MODS[selected];
+    if(grid[idx]){ setMsg('Tile already built',true); return; }
+    if(m.key==='ice' && !ice[idx]){ setMsg('Ice mines go on crater ice (the blue tiles)',true); return; }
+    if(m.key!=='ice' && ice[idx]){ setMsg('Save the ice for an ice mine',true); return; }
+    if(mass<m.mass){ setMsg('Not enough supply — need '+m.mass+'kg',true); return; }
+    mass-=m.mass; grid[idx]=m.key; setMsg('Built '+m.name,false);
+  }
+
+  cv.onpointerdown=function(e){
+    e.preventDefault();
+    if(dead){ cleanup(); startMoonBase(); return; }
+    var r=cv.getBoundingClientRect(), px=(e.clientX-r.left)*(W/r.width), py=(e.clientY-r.top)*(H/r.height);
+    var pi=palAt(px,py); if(pi>=0){ selected=(selected===pi?null:pi); return; }
+    var ti=tileAt(px,py); if(ti>=0 && selected!=null){ place(ti); }
+  };
+  const keyHandler=function(e){
+    if(dead&&(e.key===' '||e.code==='Space')){ e.preventDefault(); cleanup(); startMoonBase(); return; }
+    if(e.key>='1'&&e.key<='6'){ selected=+e.key-1; }
+    if(e.key==='Escape'){ selected=null; }
+  };
+  document.addEventListener('keydown',keyHandler);
+
+  const SOL_TICKS=60*4.2;   // ~4.2 real seconds per sol
+  function tick(){
+    if(dead)return;
+    if(msgT>0)msgT--; if(flashT>0)flashT--;
+    acc++; if(acc>=SOL_TICKS){ acc=0; resolveSol(); }
+  }
+
+  function bar(x,y,w,label,val,max,col){
+    ctx.fillStyle='#0c1320';ctx.fillRect(x,y,w,7);
+    ctx.fillStyle=col;ctx.fillRect(x,y,w*Math.max(0,Math.min(1,val/max)),7);
+    ctx.fillStyle='#8a97a8';ctx.font='7px "Press Start 2P",monospace';ctx.textAlign='left';ctx.fillText(label,x,y-4);
+  }
+  function draw(){
+    var day=isDay(sol), c=tally();
+    // sky
+    ctx.fillStyle=day?'#0a1422':'#05080f';ctx.fillRect(0,0,W,H);
+    if(!day){ ctx.fillStyle='rgba(255,255,255,.55)';for(var i=0;i<40;i++){ctx.fillRect((i*97)%W,(i*53)%48,1.5,1.5);} }
+    // ---- HUD ----
+    ctx.textAlign='left';ctx.font='10px "Press Start 2P",monospace';ctx.fillStyle='#e9eef6';
+    ctx.fillText('SOL '+(sol),8,16);
+    ctx.textAlign='center';ctx.fillStyle=day?'#ffb627':'#7fb0ff';
+    ctx.fillText(day?('☀ DAY '+nightIn(sol)):'☾ NIGHT',W/2,16);
+    ctx.textAlign='right';ctx.fillStyle='#ffb627';ctx.fillText(Math.floor(mass)+'kg',W-8,16);
+    // resource bars
+    var bw=(W-32)/3;
+    bar(12,40,bw-8,'POWER',battery,batCap(),'#4d9fff');
+    bar(12+bw,40,bw-8,'AIR',o2,99,o2<12?'#ff5d5d':'#3ddc84');
+    bar(12+bw*2,40,bw-8,'CREW '+crew+'/'+(c.hab*2),crew,Math.max(1,c.hab*2),'#ffb627');
+    // ---- grid ----
+    for(var gi=0;gi<grid.length;gi++){
+      var col=gi%COLS,row=Math.floor(gi/COLS),x=GX+col*TS,y=GY+row*TS;
+      ctx.fillStyle=ice[gi]?(day?'#163550':'#102536'):(day?'#1a212e':'#11161f');
+      ctx.fillRect(x+1,y+1,TS-2,TS-2);
+      ctx.strokeStyle='rgba(45,54,80,.5)';ctx.lineWidth=1;ctx.strokeRect(x+1,y+1,TS-2,TS-2);
+      if(ice[gi]&&!grid[gi]){ ctx.fillStyle='rgba(125,200,255,.5)';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillText('❄',x+TS/2,y+TS/2+5); }
+      if(grid[gi]){ ctx.font='20px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(MOD[grid[gi]].icon,x+TS/2,y+TS/2+1);ctx.textBaseline='alphabetic'; }
+    }
+    // ---- palette ----
+    var pw=W/MODS.length;
+    for(var p=0;p<MODS.length;p++){
+      var m=MODS[p],px=p*pw, can=mass>=m.mass;
+      ctx.fillStyle=(selected===p)?'#26405e':'#0e131b';ctx.fillRect(px+2,PALY+2,pw-4,PALH-4);
+      ctx.strokeStyle=(selected===p)?'#ffb627':'#1d2533';ctx.lineWidth=(selected===p)?2:1;ctx.strokeRect(px+2,PALY+2,pw-4,PALH-4);
+      ctx.globalAlpha=can?1:0.4;
+      ctx.font='17px sans-serif';ctx.textAlign='center';ctx.fillText(m.icon,px+pw/2,PALY+24);
+      ctx.globalAlpha=1;
+      ctx.font='7px "Press Start 2P",monospace';ctx.fillStyle=can?'#ffb627':'#586677';ctx.fillText(m.mass+'kg',px+pw/2,PALY+42);
+    }
+    // ---- footer / message ----
+    ctx.textAlign='center';ctx.font='8px "Press Start 2P",monospace';
+    if(msgT>0&&msg){ ctx.fillStyle=(flashT>0&&Math.floor(flashT/3)%2===0)?'#ff5d5d':(flashT>0?'#ffb627':'#7fd9c4'); ctx.fillText(msg,W/2,FOOTY+24); }
+    else if(selected!=null){ ctx.fillStyle='#8a97a8'; wrap(MODS[selected].desc,W/2,FOOTY+18,46); }
+    else { ctx.fillStyle='#586677'; ctx.fillText('Pick a module below, then tap a tile',W/2,FOOTY+24); }
+    // ---- game over ----
+    if(dead){
+      ctx.fillStyle='rgba(0,0,0,.78)';ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#ff5d5d';ctx.font='17px "Press Start 2P",monospace';ctx.textAlign='center';ctx.fillText('COLONY LOST',W/2,H/2-26);
+      ctx.fillStyle='#ffb627';ctx.font='10px "Press Start 2P",monospace';ctx.fillText('PEAK CREW '+bestCrew,W/2,H/2+2);
+      ctx.fillStyle='#7fd9c4';ctx.font='8px "Press Start 2P",monospace';ctx.fillText('lasted '+(sol-1)+' sols',W/2,H/2+24);
+      ctx.fillStyle='#7fd9c4';ctx.fillText('SPACE / tap to rebuild',W/2,H/2+46);
+    }
+  }
+  function wrap(text,cx,cy,max){
+    var words=text.split(' '),line='',y=cy;
+    for(var i=0;i<words.length;i++){ var t=line+words[i]+' '; if(t.length>max&&line){ ctx.fillText(line.trim(),cx,y); line=words[i]+' '; y+=11; } else line=t; }
+    ctx.fillText(line.trim(),cx,y);
+  }
+  let stopLoop;
+  function cleanup(){ if(stopLoop)stopLoop(); document.removeEventListener('keydown',keyHandler); cv.onpointerdown=null; }
+  activeCleanup=cleanup;
+  stopLoop=driveLoop(tick,draw);
+}
 </script>
 <script>
 /* ===== ARCADE LEADERBOARD (Supabase backend) =====
@@ -1088,7 +1268,10 @@ function startFuel(){
     {id:'flappy',  name:'FLAPPY STARSHIP', emoji:'🚀', unit:''},
     {id:'lander',  name:'BOOSTER LANDING', emoji:'🛬', unit:'% fuel'},
     {id:'orbital', name:'ORBITAL DEBRIS',  emoji:'☄️',  unit:''},
-    {id:'swarm',   name:'STAR SWARM',      emoji:'👾', unit:''}
+    {id:'swarm',   name:'STAR SWARM',      emoji:'👾', unit:''},
+    {id:'gravity', name:'GRAVITY ASSIST',  emoji:'🪐', unit:''},
+    {id:'fuel',    name:'FUEL TRANSFER',   emoji:'⛽', unit:''},
+    {id:'moonbase',name:'MOON BASE',       emoji:'🌖', unit:'crew'}
   ];
   var META={};BOARDS.forEach(function(b){META[b.id]=b;});
   function el(id){return document.getElementById(id);}
