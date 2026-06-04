@@ -101,7 +101,30 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
         <button class="btn" type="submit">&#9654; Subscribe</button>
       </form>
       <div data-ll-signup-msg class="tiny" style="min-height:14px;margin-top:8px"></div>
-      <div class="tiny">No spam &mdash; just liftoffs. We don't share your email.</div>
+      <div class="tiny">No spam &mdash; just liftoffs. We don't share your email. See our <a href="privacy.html" style="color:var(--amber)">Privacy Policy</a>.</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="card">
+      <h3>How the content is made</h3>
+      <p>This is a one-person project, and we want to be straight with you about it. The words, course picks, and reliability write-ups here are <b style="color:var(--txt);font-weight:500">human-authored and human-curated</b>.</p>
+      <p>Where AI helps, we keep it honest and on a short leash. It's used as a tool &mdash; for layout, code, and for compiling factual descriptions from <b style="color:var(--txt);font-weight:500">real, cited sources</b> that a human reviews before anything is published. Any content that's actually AI-generated is <b style="color:var(--txt);font-weight:500">clearly labeled</b> (for example, the daily news summary carries a &#10022; AI-generated badge), and every claim links back to a real source.</p>
+      <p>What we never do: invent facts, pass off AI writing as human, or auto-publish anything without either a human checking it or its source links being verified.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="card">
+      <h3>Data &amp; credits</h3>
+      <p>Live Launchpad stands on the shoulders of some excellent open data and tools. Huge thanks to:</p>
+      <ul class="feat-list">
+        <li><span class="ic">&#9654;</span><span><b>The Space Devs</b> &mdash; live launch schedule &amp; details (Launch Library 2) and spaceflight news (Spaceflight News API).</span></li>
+        <li><span class="ic">&#9654;</span><span><b>YouTube creators</b> &mdash; every video in the Videos feed and Learning Center is embedded and links back to its original channel.</span></li>
+        <li><span class="ic">&#9654;</span><span><b>Google MediaPipe</b> &mdash; on-device hand tracking that powers the optional Gesture Mode.</span></li>
+        <li><span class="ic">&#9654;</span><span><b>Three.js</b> &mdash; the 3D rocket explorer. <b>Supabase</b> &mdash; data &amp; accounts. <b>Netlify</b> &mdash; hosting. <b>Google Fonts</b> &mdash; type.</span></li>
+      </ul>
+      <p style="margin-top:14px">Rocket names, logos, and trademarks belong to their respective companies and agencies; we're an independent project and not affiliated with any of them. 3D models are illustrative, not engineering drawings. The full terms are on the <a href="terms.html" style="color:var(--amber)">Terms</a> page, and how we handle data is on the <a href="privacy.html" style="color:var(--amber)">Privacy</a> page.</p>
     </div>
   </section>
 </div>
@@ -119,7 +142,7 @@ footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber
   var h=document.getElementById('site-header');
   if(h)h.outerHTML='<nav class="nav"><div class="nav-inner"><a class="brand" href="index.html">\uD83D\uDE80 <span class="blink"></span> LIVE LAUNCHPAD</a><div class="nav-links">'+nl+'</div><button class="nav-toggle" onclick="__toggleNav()" aria-label="Menu">\u2630</button><button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">\u263E</button></div></nav>';
   var f=document.getElementById('site-footer');
-  if(f)f.outerHTML='<footer><div class="wrap"><b>LIVE LAUNCHPAD</b> \u2014 mission control for the orbital era.<br>An independent project \u00B7 <a href="about.html">About</a> \u00B7 <a href="index-reliability.html">The Index</a></div></footer>';
+  if(f)f.outerHTML='<footer><div class="wrap"><b>LIVE LAUNCHPAD</b> \u2014 mission control for the orbital era.<br>An independent project \u00B7 <a href="about.html">About</a> \u00B7 <a href="privacy.html">Privacy</a> \u00B7 <a href="terms.html">Terms</a> \u00B7 <a href="index-reliability.html">The Index</a></div></footer>';
   var b=document.querySelector('.theme-btn');if(b)b.textContent='\u263E';
   var c=document.getElementById('stars');if(c){var s='';for(var i=0;i<70;i++){var z=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);s+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+z+'px;height:'+z+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=s;}
 })();

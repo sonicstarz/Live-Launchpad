@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Launchpad — Terms of Use</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Chivo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070a10;--bg2:#0d121c;--panel:#111827;--panel2:#161f30;--line:#1e2738;--line2:#2a3650;--txt:#e9eef6;--txt2:#8b9bb4;--txt3:#586780;--amber:#ffb627;--green:#3ddc84;--teal:#2dd4bf;--blue:#4d9fff;--purple:#a78bfa;--red:#ff5d5d;--coral:#ff8a5b;--pink:#f472b6;--mono:'Space Mono',monospace;--sans:'Chivo',sans-serif}
+:root[data-theme="light"]{--bg:#f4f6fb;--bg2:#fff;--panel:#fff;--panel2:#f0f3f9;--line:#dce3ef;--line2:#c4cfe0;--txt:#0f1726;--txt2:#48566e;--txt3:#7a89a3}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-weight:300;line-height:1.6;overflow-x:hidden;min-height:100vh;background-image:radial-gradient(circle at 12% 6%,rgba(77,159,255,.07),transparent 35%),radial-gradient(circle at 88% 22%,rgba(255,182,39,.05),transparent 42%);background-attachment:fixed;transition:background-color .3s,color .3s}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+:root[data-theme="light"] #stars{opacity:.12}
+.star{position:absolute;background:var(--txt);border-radius:50%;animation:tw ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.12}50%{opacity:.85}}
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 20px}
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:18px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt);font-weight:700;font-size:16px;white-space:nowrap;font-family:var(--sans)}
+.brand .blink{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.nav-links{display:flex;gap:2px;flex:1;flex-wrap:wrap}
+.nav-links a{color:var(--txt2);text-decoration:none;font-size:13px;font-family:var(--mono);padding:7px 11px;border-radius:7px;transition:all .15s}
+.nav-links a:hover{color:var(--txt);background:var(--panel2)}
+.nav-links a.active{color:var(--amber);background:rgba(255,182,39,.1)}
+.theme-btn{background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;display:grid;place-items:center;flex-shrink:0}
+.theme-btn:hover{color:var(--amber);border-color:var(--amber)}
+.nav-toggle{display:none;background:var(--panel2);border:1px solid var(--line2);color:var(--txt2);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:18px;place-items:center;transition:all .15s}
+.nav-toggle:hover{color:var(--amber);border-color:var(--amber)}
+@media(max-width:860px){
+  .nav-toggle{display:grid}
+  .nav-inner{position:relative}
+  .brand{margin-right:auto}
+  .nav-links{display:none;position:absolute;top:calc(100% + 10px);left:0;right:0;flex:none;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 16px 40px rgba(0,0,0,.45);z-index:60}
+  .nav-links.open{display:flex}
+  .nav-links a{padding:11px 14px;border-radius:8px;font-size:14px}
+}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.eyebrow::before{content:"";width:32px;height:1px;background:var(--amber)}
+h1{font-weight:900;font-size:clamp(30px,6vw,50px);line-height:1;letter-spacing:-.025em}
+.gt{background:linear-gradient(100deg,var(--amber),var(--coral) 45%,var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.section{margin:32px 0}
+.legal{max-width:760px}
+.legal .lead{color:var(--txt);font-size:16px;line-height:1.65;margin:16px 0 4px}
+.legal h2{font-size:21px;font-weight:700;margin:32px 0 8px;letter-spacing:-.01em}
+.legal p{color:var(--txt2);font-size:14.5px;line-height:1.72;margin:8px 0}
+.legal ul{margin:8px 0 8px 4px;list-style:none}
+.legal li{color:var(--txt2);font-size:14.5px;line-height:1.6;margin:7px 0;display:flex;gap:10px;align-items:flex-start}
+.legal li::before{content:"\25B8";color:var(--amber);flex-shrink:0}
+.legal a{color:var(--amber);text-decoration:none}
+.legal a:hover{text-decoration:underline}
+.legal b{color:var(--txt);font-weight:600}
+.legal .upd{font-family:var(--mono);font-size:12px;color:var(--txt3);margin-top:10px}
+.callout{background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--amber);border-radius:10px;padding:14px 16px;margin:14px 0;font-size:14px;color:var(--txt2);line-height:1.6}
+footer{border-top:1px solid var(--line);margin-top:50px;padding:28px 0 50px;font-size:12px;color:var(--txt3)}
+footer a{color:var(--txt2);text-decoration:none}footer a:hover{color:var(--amber)}
+@media(max-width:560px){.nav-inner{gap:10px}}
+::-webkit-scrollbar{height:8px;width:8px}::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div id="site-header"></div>
+<div class="wrap">
+  <section class="section" style="padding-top:40px">
+    <div class="eyebrow">Open Channel &middot; The Fine Print</div>
+    <h1><span class="gt">Terms</span> of Use</h1>
+    <div class="legal">
+      <p class="lead">Live Launchpad is a free, independent spaceflight project made by an enthusiast. By using the site you agree to these simple terms. They're written in plain English on purpose.</p>
+      <div class="upd">Last updated: 4 June 2026</div>
+
+      <h2>What this is</h2>
+      <p>Live Launchpad is an informational and educational hobby site about rocket launches — schedules, reliability data, news, learning content, and games. It's offered free of charge, "as is," and as a personal project.</p>
+
+      <h2>Not official, and not always perfect</h2>
+      <div class="callout">⚠️ We are <b>not affiliated with</b> NASA, SpaceX, ULA, Blue Origin, ESA, or any launch provider or agency. Launch times, data, and reliability figures are pulled from public sources and may be delayed, incomplete, or wrong. 3D rocket models are <b>illustrative</b>, not engineering-accurate. Don't rely on anything here for operational, safety, financial, or travel decisions.</div>
+
+      <h2>Using the site fairly</h2>
+      <ul>
+        <li>Don't attack, overload, scrape aggressively, or try to break the site or its data.</li>
+        <li>Keep leaderboard initials and any content you submit appropriate — no slurs, harassment, or impersonation. We may remove content or scores at our discretion.</li>
+        <li>If you create a Learning Center account, keep your login secure and don't share it. We may suspend accounts that abuse the service.</li>
+      </ul>
+
+      <h2>Content &amp; ownership</h2>
+      <p>The site's original design, text, code, and games belong to the Live Launchpad project. Launch data, news articles, videos, rocket names, logos, and trademarks belong to their respective owners and sources — see the credits on the <a href="about.html">About</a> page. Embedded videos remain the property of their creators and are subject to YouTube's terms.</p>
+
+      <h2>No warranty &amp; liability</h2>
+      <p>The site is provided "as is," without warranties of any kind. To the fullest extent allowed by law, we aren't liable for any loss or damage arising from your use of the site or reliance on its information. If you don't agree with that, please don't use the site.</p>
+
+      <h2>Availability</h2>
+      <p>This is a hobby project — features may change, break, or disappear, and the site may be unavailable at times. We make no promise of uptime.</p>
+
+      <h2>Privacy</h2>
+      <p>How we handle data is covered in our <a href="privacy.html">Privacy Policy</a>.</p>
+
+      <h2>Contact &amp; changes</h2>
+      <p>Questions? Email <a href="mailto:hello@livelaunchpad.com">hello@livelaunchpad.com</a>. We may update these terms; the current version always lives on this page. This is a plain-language summary, not legal advice.</p>
+    </div>
+  </section>
+</div>
+<div id="site-footer"></div>
+<script>
+(function(){
+  var root=document.documentElement;
+  function setTheme(t){root.setAttribute('data-theme',t);var b=document.querySelector('.theme-btn');if(b)b.textContent=t==='light'?'☀':'☾';}
+  window.__toggleTheme=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
+  window.__toggleNav=function(){var n=document.querySelector('.nav-links');if(n)n.classList.toggle('open');};
+  setTheme('dark');
+  var page=(location.pathname.split('/').pop()||'index.html');
+  var links=[['index.html','Home'],['index-reliability.html','The Index'],['schedule.html','Schedule'],['news.html','News'],['development.html','In Dev'],['games.html','Arcade'],['learn.html','Learn'],['explorer.html','Rockets'],['about.html','About']];
+  var nl=links.map(function(l){var a=(l[0]===page)?' class="active"':'';return '<a href="'+l[0]+'"'+a+'>'+l[1]+'</a>';}).join('');
+  var h=document.getElementById('site-header');
+  if(h)h.outerHTML='<nav class="nav"><div class="nav-inner"><a class="brand" href="index.html">🚀 <span class="blink"></span> LIVE LAUNCHPAD</a><div class="nav-links">'+nl+'</div><button class="nav-toggle" onclick="__toggleNav()" aria-label="Menu">☰</button><button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">☾</button></div></nav>';
+  var f=document.getElementById('site-footer');
+  if(f)f.outerHTML='<footer><div class="wrap"><b>LIVE LAUNCHPAD</b> — mission control for the orbital era.<br>An independent project · <a href="about.html">About</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="index-reliability.html">The Index</a></div></footer>';
+  var b=document.querySelector('.theme-btn');if(b)b.textContent='☾';
+  var c=document.getElementById('stars');if(c){var s='';for(var i=0;i<70;i++){var z=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);s+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+z+'px;height:'+z+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=s;}
+})();
+</script>
+</body>
+</html>
