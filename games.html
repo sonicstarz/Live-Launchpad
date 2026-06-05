@@ -1904,54 +1904,6 @@ function startFusion(){
   renderBoards();
 })();
 </script>
-<script>
-/* ===== SPACE AGE — base ===== */
-(function(){
-  var root=document.documentElement;
-  function setTheme(t){root.setAttribute('data-theme',t);var b=document.querySelector('.theme-btn');if(b)b.textContent=t==='light'?'\u2600':'\u263E';}
-  window.__toggleTheme=function(){setTheme(root.getAttribute('data-theme')==='light'?'dark':'light');};
-  window.__toggleNav=function(){var n=document.querySelector('.nav-links');if(n)n.classList.toggle('open');};
-  setTheme('dark');
-  function stars(){var c=document.getElementById('stars');if(!c)return;var h='';for(var i=0;i<90;i++){var s=(Math.random()*2+.5).toFixed(1),d=(Math.random()*3+2).toFixed(1),dl=(Math.random()*4).toFixed(1);h+='<div class="star" style="left:'+(Math.random()*100).toFixed(2)+'%;top:'+(Math.random()*100).toFixed(2)+'%;width:'+s+'px;height:'+s+'px;animation-duration:'+d+'s;animation-delay:'+dl+'s"></div>';}c.innerHTML=h;}
-  stars();
-})();
-/* ===== SHARED HEADER + FOOTER (single source of truth) ===== */
-(function(){
-  var page=(location.pathname.split('/').pop()||'index.html');
-  var links=[
-    ['index.html','Home'],
-    ['index-reliability.html','The Index'],
-    ['schedule.html','Schedule'],
-    ['news.html','News'],
-    ['development.html','In Dev'],
-    ['games.html','Arcade'],
-    ['learn.html','Learn'],['explorer.html','Rockets'],['about.html','About']
-  ];
-  var navlinks=links.map(function(l){
-    var active=(l[0]===page||(page===''&&l[0]==='index.html'))?' class="active"':'';
-    return '<a href="'+l[0]+'"'+active+'>'+l[1]+'</a>';
-  }).join('');
-  var header=''
-    +'<nav class="nav"><div class="nav-inner">'
-    +'<a class="brand" href="index.html"><span class="logo">\uD83D\uDE80</span><span class="blink"></span> LIVE LAUNCHPAD</a>'
-    +'<div class="nav-links">'+navlinks+'</div>'
-    +'<button class="nav-toggle" onclick="__toggleNav()" aria-label="Menu">\u2630</button><button class="theme-btn" onclick="__toggleTheme()" aria-label="Toggle theme">\u263E</button>'
-    +'</div></nav>';
-  var footer=''
-    +'<footer><div class="wrap">'
-    +'<b>LIVE LAUNCHPAD</b> \u2014 mission control for the orbital era. Built with data from The Space Devs &amp; friends.<br>'
-    +'An independent project \u00B7 <a href="about.html">About</a> \u00B7 <a href="privacy.html">Privacy</a> \u00B7 <a href="terms.html">Terms</a> \u00B7 <a href="index-reliability.html">The Index</a>'
-    +'</div></footer>';
-
-  var mount=document.getElementById('site-header');
-  if(mount) mount.outerHTML=header; 
-  var fmount=document.getElementById('site-footer');
-  if(fmount) fmount.outerHTML=footer;
-
-  // re-apply theme button glyph after injection
-  var t=document.documentElement.getAttribute('data-theme')||'dark';
-  var b=document.querySelector('.theme-btn'); if(b) b.textContent=(t==='light'?'\u2600':'\u263E');
-})();
-</script>
+<script src="ll-nav.js" defer></script>
 </body>
 </html>
