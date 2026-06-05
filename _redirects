@@ -1,0 +1,18 @@
+# Live Launchpad — clean URL aliases (Netlify _redirects)
+# Additive only: the real .html files are still served directly, so every
+# existing /<page>.html link keeps working. These 301s give stable, rename-proof
+# URLs for the 5-destination IA — if a file is renamed later, update only the
+# target here and external links survive.
+
+/schedule      /schedule.html            301
+/calendar      /calendar.html            301
+/watch         /watch.html               301
+/news          /news.html                301
+/arcade        /games.html               301
+/quiz          /play.html                301
+/learn         /learn-hub.html           301
+/rockets       /explorer.html            301
+/rocket-database  /rocket-db.html        301
+/reliability   /index-reliability.html   301
+/in-dev        /development.html         301
+/about         /about.html               301
