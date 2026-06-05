@@ -30,10 +30,13 @@
     if(!document.getElementById('ll-welcome-css')){
       var st=document.createElement('style'); st.id='ll-welcome-css';
       st.textContent=
-        '.ll-w-overlay{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;'
-          +'background:rgba(4,6,12,.78);backdrop-filter:blur(6px);opacity:0;transition:opacity .24s;overflow-y:auto}'
+        /* display:flex + overflow + card margin:auto = centred when it fits, but
+           top-anchored and fully scrollable when taller than the screen (mobile). */
+        '.ll-w-overlay{position:fixed;inset:0;z-index:500;display:flex;padding:20px;'
+          +'background:rgba(4,6,12,.78);backdrop-filter:blur(6px);opacity:0;transition:opacity .24s;'
+          +'overflow-y:auto;-webkit-overflow-scrolling:touch}'
         +'.ll-w-overlay.show{opacity:1}'
-        +'.ll-w-card{position:relative;width:560px;max-width:100%;background:var(--panel,#111827);border:1px solid var(--line2,#2a3650);'
+        +'.ll-w-card{position:relative;width:560px;max-width:100%;margin:auto;background:var(--panel,#111827);border:1px solid var(--line2,#2a3650);'
           +'border-radius:16px;padding:30px;box-shadow:0 30px 80px rgba(0,0,0,.6);font-family:var(--sans,sans-serif);'
           +'transform:translateY(14px) scale(.985);transition:transform .24s}'
         +'.ll-w-overlay.show .ll-w-card{transform:none}'
@@ -58,7 +61,17 @@
           +'font-family:var(--mono,monospace);font-weight:700;font-size:14px;letter-spacing:.03em;padding:14px;cursor:pointer}'
         +'.ll-w-cta:hover{box-shadow:0 0 0 3px rgba(255,182,39,.2)}'
         +'.ll-w-foot{text-align:center;font-family:var(--mono,monospace);font-size:10.5px;color:var(--txt3,#586780);margin-top:10px}'
-        +'@media(max-width:560px){.ll-w-grid{grid-template-columns:1fr}.ll-w-card{padding:22px}.ll-w-h{font-size:22px}}';
+        +'@media(max-width:560px){'
+          +'.ll-w-overlay{padding:12px}'
+          +'.ll-w-card{padding:20px 18px;border-radius:14px}'
+          +'.ll-w-h{font-size:21px}'
+          +'.ll-w-sub{font-size:13.5px}'
+          +'.ll-w-who{font-size:12.5px;margin-bottom:14px}'
+          +'.ll-w-grid{grid-template-columns:1fr;gap:8px;margin-bottom:16px}'
+          +'.ll-w-feat{padding:10px 11px}'
+          +'.ll-w-x{top:10px;right:10px;width:34px;height:34px}'
+          +'.ll-w-cta{padding:15px}'
+        +'}';
       (document.head||document.documentElement).appendChild(st);
     }
 
