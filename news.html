@@ -257,6 +257,10 @@ document.querySelectorAll('.tab').forEach(function(b){ b.onclick=function(){
   document.getElementById('view-videos').hidden = t!=='videos';
   if(t==='videos' && !videosLoaded){ videosLoaded=true; loadVideos(); }
 }; });
+/* open the Videos tab when arrived via the nav child link (news.html#videos) */
+function showTab(name){ var b=document.querySelector('.tab[data-tab="'+name+'"]'); if(b)b.onclick(); }
+if(location.hash==='#videos') showTab('videos');
+window.addEventListener('hashchange',function(){ if(location.hash==='#videos') showTab('videos'); else if(location.hash===''||location.hash==='#articles'||location.hash==='#news') showTab('news'); });
 </script>
 <script src="ll-nav.js" defer></script>
 </body>
