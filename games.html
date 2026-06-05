@@ -195,6 +195,24 @@ footer a:hover{color:var(--amber)}
   .dot{width:9px;height:9px;border-radius:50%;background:#3d2a5c;transition:all .2s;cursor:pointer}
   .dot.on{background:#ffb627;box-shadow:0 0 8px rgba(255,182,39,.7);transform:scale(1.2)}
 
+  /* ===== GAME GRID (card collage) ===== */
+  .arcade-intro{text-align:center;font-family:var(--mono);font-size:13px;color:var(--txt2);margin:0 0 18px}
+  .game-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:14px;margin-top:6px}
+  .game-card{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;background:linear-gradient(180deg,#15101f,#0d0a15);border:1px solid #2a2140;border-radius:14px;padding:20px 14px 15px;cursor:pointer;overflow:hidden;transition:transform .12s,border-color .12s,box-shadow .12s}
+  .game-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:#ffb627;opacity:.5}
+  .game-card:hover,.game-card:focus-visible{transform:translateY(-4px);border-color:#ffb627;box-shadow:0 12px 30px rgba(0,0,0,.5);outline:none}
+  .gc-art{font-size:44px;margin-bottom:12px;filter:drop-shadow(0 0 10px rgba(255,182,39,.45))}
+  .gc-name{font-family:'Press Start 2P',monospace;font-size:11px;color:#ffb627;line-height:1.5;text-shadow:0 0 8px rgba(255,182,39,.5);margin-bottom:9px;min-height:2.3em;display:flex;align-items:center}
+  .gc-desc{font-family:var(--mono);font-size:11.5px;color:#7fd9c4;line-height:1.5;margin-bottom:13px;flex:1}
+  .gc-status{font-family:'Press Start 2P',monospace;font-size:7px;letter-spacing:1px;padding:5px 9px;border-radius:4px}
+  .gc-status.ready{background:rgba(61,220,132,.18);color:#3ddc84}
+  .gc-status.soon{background:rgba(255,182,39,.18);color:#ffb627}
+  .gc-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,6,14,.84);color:#fff;font-family:'Press Start 2P',monospace;font-size:13px;letter-spacing:1px;opacity:0;transition:opacity .12s}
+  .game-card:hover .gc-play,.game-card:focus-visible .gc-play{opacity:1}
+  .game-card.soon{cursor:default;opacity:.6}
+  .game-card.soon::before{background:#7a6a9c;opacity:.35}
+  .game-card.soon:hover{transform:none;border-color:#2a2140;box-shadow:none}
+
   .hint{text-align:center;font-family:var(--mono);font-size:12px;color:var(--txt3);margin-top:24px}
   .hint kbd{background:var(--panel2);border:1px solid var(--line2);border-radius:5px;padding:2px 8px;font-size:11px;color:var(--txt2)}
 
@@ -278,36 +296,9 @@ footer a:hover{color:var(--amber)}
     <h1>The <span class="gt">Arcade</span></h1>
   </div>
 
-  <div class="cabinet">
-    <div class="cab-body">
-      <div class="cab-marquee"><span>LIVE LAUNCHPAD</span></div>
-
-      <div class="crt-frame">
-        <div class="crt">
-          <div class="crt-counter" id="counter">01 / 06</div>
-          <div class="crt-inner" id="screen">
-            <div class="game-art" id="g-art">🐍</div>
-            <div class="game-name" id="g-name">ROCKET SNAKE</div>
-            <div class="game-desc" id="g-desc">Pilot a rocket trailing exhaust. Collect fuel cells, don't bite your own tail.</div>
-            <div class="game-status ready" id="g-status">● READY</div>
-          </div>
-          <div class="crt-insert" id="insert">◄ SELECT ►   PRESS START</div>
-        </div>
-      </div>
-
-      <div class="cab-controls">
-        <button class="arrow-btn" id="prev" aria-label="Previous game">◄</button>
-        <button class="start-btn" id="start">START</button>
-        <div class="coin-slot"><div class="coin"></div><div class="coin-label">INSERT COIN</div></div>
-        <button class="arrow-btn" id="next" aria-label="Next game">►</button>
-      </div>
-    </div>
-
-    <div class="dot-row" id="dots"></div>
-  </div>
-
-  <div class="hint">Use <kbd>â</kbd> <kbd>âº</kbd> arrows (or keyboard) to browse Â· <kbd>START</kbd> / <kbd>Enter</kbd> to play</div>
-  <div class="hint" style="margin-top:10px">🧠 Got a classroom or group? Join a <a href="play.html" style="color:#ffb627;text-decoration:none">Live Quiz</a>.</div>
+    <div class="arcade-intro">Tap a game to play — high scores save to the leaderboard below.</div>
+  <div class="game-grid" id="grid"></div>
+  <div class="hint" style="margin-top:18px">🧠 Got a classroom or group? Join a <a href="play.html" style="color:#ffb627;text-decoration:none">Live Quiz</a>.</div>
 
   <div class="lb-section">
     <div class="lb-title">HIGH SCORES</div>
@@ -366,62 +357,29 @@ const GAMES=[
   {art:'🧠',name:'LAUNCH TRIVIA',desc:'A daily quiz drawn from decades of space history. Build your streak.',status:'soon'},
   {art:'🛰',name:'ROCKETLE',desc:'Guess the rocket in six tries. A new mystery vehicle every day.',status:'soon'}
 ];
-let cur=0;
 const $=function(id){return document.getElementById(id);};
+var OPENERS={snake:openSnake,flappy:openFlappy,lander:openLander,orbital:openOrbital,swarm:openSwarm,gravity:openGravity,fuel:openFuel,moonbase:openMoonBase,docking:openDocking,mines:openMines,cargo:openCargo,breakout:openBreakout,asteroids:openAsteroids,fusion:openFusion};
+function playGame(key){ var fn=OPENERS[key]; if(fn) fn(); }
 
-function render(){
-  const g=GAMES[cur];
-  const screen=$('screen');
-  screen.style.opacity=0;
-  setTimeout(function(){
-    $('g-art').textContent=g.art;
-    $('g-name').textContent=g.name;
-    $('g-desc').textContent=g.desc;
-    const st=$('g-status');
-    if(g.status==='ready'){st.className='game-status ready';st.textContent='● READY';}
-    else{st.className='game-status soon';st.textContent='● COMING SOON';}
-    $('counter').textContent=String(cur+1).padStart(2,'0')+' / '+String(GAMES.length).padStart(2,'0');
-    const sb=$('start');
-    if(g.status==='ready'){sb.classList.remove('locked');sb.textContent='START';}
-    else{sb.classList.add('locked');sb.textContent='LOCKED';}
-    document.querySelectorAll('.dot').forEach(function(d,i){d.classList.toggle('on',i===cur);});
-    screen.style.opacity=1;
-  },140);
-}
-$('screen').style.transition='opacity .14s';
-
-// dots
-let dh='';GAMES.forEach(function(_,i){dh+='<div class="dot'+(i===0?' on':'')+'" data-i="'+i+'"></div>';});
-$('dots').innerHTML=dh;
-document.querySelectorAll('.dot').forEach(function(d){d.onclick=function(){cur=+d.dataset.i;render();};});
-
-$('prev').onclick=function(){cur=(cur-1+GAMES.length)%GAMES.length;render();};
-$('next').onclick=function(){cur=(cur+1)%GAMES.length;render();};
-$('start').onclick=function(){
-  const g=GAMES[cur];
-  if(g.status!=='ready')return;
-  if(g.play==='snake')openSnake();
-  else if(g.play==='flappy')openFlappy();
-  else if(g.play==='lander')openLander();
-  else if(g.play==='orbital')openOrbital();
-  else if(g.play==='swarm')openSwarm();
-  else if(g.play==='gravity')openGravity();
-  else if(g.play==='fuel')openFuel();
-  else if(g.play==='moonbase')openMoonBase();
-  else if(g.play==='docking')openDocking();
-  else if(g.play==='mines')openMines();
-  else if(g.play==='cargo')openCargo();
-  else if(g.play==='breakout')openBreakout();
-  else if(g.play==='asteroids')openAsteroids();
-  else if(g.play==='fusion')openFusion();
-};
-document.addEventListener('keydown',function(e){
-  if($('stage').classList.contains('open'))return;
-  if(e.key==='ArrowLeft')$('prev').click();
-  if(e.key==='ArrowRight')$('next').click();
-  if(e.key==='Enter'||e.key===' '||e.code==='Space'){e.preventDefault();$('start').click();}
-});
-render();
+// Build the card collage from GAMES. Ready games are clickable (open the play
+// view); 'soon' games are shown dimmed and aren't clickable.
+(function(){
+  var grid=$('grid'); if(!grid) return;
+  grid.innerHTML=GAMES.map(function(g){
+    var ready=g.status==='ready';
+    return '<div class="game-card'+(ready?'':' soon')+'"'+(ready?' data-play="'+g.play+'" tabindex="0" role="button" aria-label="Play '+g.name+'"':'')+'>'
+      +'<div class="gc-art">'+g.art+'</div>'
+      +'<div class="gc-name">'+g.name+'</div>'
+      +'<div class="gc-desc">'+g.desc+'</div>'
+      +'<div class="gc-status '+(ready?'ready':'soon')+'">'+(ready?'\u25CF READY':'\u25CF SOON')+'</div>'
+      +(ready?'<div class="gc-play">\u25B6 PLAY</div>':'')
+      +'</div>';
+  }).join('');
+  Array.prototype.forEach.call(grid.querySelectorAll('.game-card[data-play]'),function(c){
+    c.onclick=function(){ playGame(c.getAttribute('data-play')); };
+    c.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '||e.code==='Space'){ e.preventDefault(); playGame(c.getAttribute('data-play')); } };
+  });
+})();
 
 /* ============ GAME LIFECYCLE ============ */
 let activeCleanup=null;
